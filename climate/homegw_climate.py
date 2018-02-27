@@ -18,7 +18,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import async_get_last_state
 import homeassistant.helpers.config_validation as cv
-from ..filter_helper import Filter, FILTER_OUTLIER
+from ..filter_helper import Filter, FILTER_OUTLIER, FILTER_LOWPASS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -173,7 +173,10 @@ class HomeGWClimate(ClimateDevice):
     @property
     def current_temperature(self):
         """Return the current temperature."""
-        return round(filter_current_temperature() / 0.25) * 0.25
+        temp = self.filter_current_temperature()
+        if temp is None:
+            return None
+        return round(temp / 0.25) * 0.25
 
     @Filter(FILTER_LOWPASS,
             window_size=1, precision=0.25, entity="unnamed",time_constant=4)
@@ -186,7 +189,10 @@ class HomeGWClimate(ClimateDevice):
     @property
     def current_humidity(self):
         """Return the current humidity."""
-        return round(filter_current_humidity() / 0.25) * 0.25
+        humidity = self.filter_current_humidity()
+        if humidity is None:
+            return None
+        return round(humidity / 0.25) * 0.25
 
     @property
     def current_operation(self):
