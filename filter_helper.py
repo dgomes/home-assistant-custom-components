@@ -2,7 +2,7 @@
 import logging
 import inspect
 
-from homeassistant.components.sensor.filter import (
+from sensor.filter import (
     OutlierFilter, LowPassFilter, ThrottleFilter)
 
 FILTER_LOWPASS = 'lowpass'

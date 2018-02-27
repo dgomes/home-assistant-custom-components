@@ -48,3 +48,7 @@ weather:
     serial_sensor: sensor.serial_sensor
 
 ``` 
+
+# The *filter_helper.py*
+
+This file provides a decorator class used in the homegw_climate and homegw_weather platforms. It has a dependency in the filter sensor which actually implements the filters.
