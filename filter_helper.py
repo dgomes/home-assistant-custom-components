@@ -7,16 +7,21 @@ from .sensor.filter import (
 
 FILTER_LOWPASS = 'lowpass'
 FILTER_OUTLIER = 'outlier'
+FILTER_THROTTLE = 'throttle'
 
 FILTERS = {
-            FILTER_LOWPASS: LowPassFilter,
-            FILTER_OUTLIER: OutlierFilter
-          }
+    FILTER_LOWPASS: LowPassFilter,
+    FILTER_OUTLIER: OutlierFilter,
+    FILTER_THROTTLE: ThrottleFilter
+    }
+
 
 class Filter(object):
     """Filter decorator."""
+
     def __init__(self, filter_algorithm, **kwargs):
         """Decorator constructor, selects algorithm and configures window.
+
         Args:
             filter_algorithm (string): must be one of the defined filters
             kwargs (dict): arguments to be passed to the specific filter

@@ -9,17 +9,11 @@ import json
 import voluptuous as vol
 
 from homeassistant.components.climate import (
-    ClimateDevice, ATTR_TARGET_TEMP_HIGH, ATTR_TARGET_TEMP_LOW,
-    ATTR_HUMIDITY, ATTR_TEMPERATURE,
+    ClimateDevice, SUPPORT_TARGET_HUMIDITY_LOW,
     ATTR_CURRENT_HUMIDITY, ATTR_CURRENT_TEMPERATURE,
-    SUPPORT_TARGET_TEMPERATURE, SUPPORT_TARGET_HUMIDITY,
-    SUPPORT_TARGET_HUMIDITY_LOW, SUPPORT_TARGET_HUMIDITY_HIGH,
-    SUPPORT_AWAY_MODE, SUPPORT_HOLD_MODE, SUPPORT_FAN_MODE,
-    SUPPORT_OPERATION_MODE, SUPPORT_AUX_HEAT, SUPPORT_SWING_MODE,
-    SUPPORT_TARGET_TEMPERATURE_HIGH, SUPPORT_TARGET_TEMPERATURE_LOW,
-    SUPPORT_ON_OFF, ENTITY_ID_FORMAT, PLATFORM_SCHEMA, STATE_UNKNOWN)
+    PLATFORM_SCHEMA, STATE_UNKNOWN)
 from homeassistant.const import (
-    TEMP_CELSIUS, TEMP_FAHRENHEIT, ATTR_TEMPERATURE, CONF_NAME, STATE_ON)
+    TEMP_CELSIUS, CONF_NAME, STATE_ON)
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import async_get_last_state
@@ -65,29 +59,30 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     target_temp = config.get(CONF_TARGET_TEMP)
 
     async_add_devices([
-        HomeGWClimate(hass, name, serial_sensor, heating_sensor, dev_channel, target_temp)
+        HomeGWClimate(hass, name, serial_sensor,
+                      heating_sensor, dev_channel, target_temp)
     ])
 
 
 class HomeGWClimate(ClimateDevice):
     """Representation of a demo climate device."""
 
-    def __init__(self, hass, name, serial_sensor, heating_sensor, dev_channel, target_temp):
-    
+    def __init__(self, hass, name, serial_sensor,
+                 heating_sensor, dev_channel, target_temp):
         """Initialize the climate device."""
         self._name = name
         self._channel = dev_channel
         self._id = None
         self._battery = None
-        self._unit_of_measurement = TEMP_CELSIUS 
+        self._unit_of_measurement = TEMP_CELSIUS
         self._support_flags = SUPPORT_FLAGS
 
         self._current_operation = 'idle'
-        self._current_temperature = None 
+        self._current_temperature = None
         self._current_humidity = None
-        self._temperature = target_temp 
-        self._humidity = None 
-        self._target_humidity = 50 
+        self._temperature = target_temp
+        self._humidity = None
+        self._target_humidity = 50
 
         async_track_state_change(hass, serial_sensor, self._sensor_changed)
         async_track_state_change(hass, heating_sensor, self._heating_changed)
@@ -95,14 +90,16 @@ class HomeGWClimate(ClimateDevice):
     @asyncio.coroutine
     def async_added_to_hass(self):
         """Run when entity about to be added."""
-
         old_state = yield from async_get_last_state(self.hass, self.entity_id)
         if old_state is not None:
-            _LOGGER.debug("Loading %s old_state: %s", self.entity_id, old_state)
+            _LOGGER.debug("Loading %s old_state: %s",
+                          self.entity_id, old_state)
             if old_state.attributes.get(ATTR_CURRENT_TEMPERATURE):
-                self._current_temperature = float(old_state.attributes[ATTR_CURRENT_TEMPERATURE])
+                self._current_temperature = float(
+                    old_state.attributes[ATTR_CURRENT_TEMPERATURE])
             if old_state.attributes.get(ATTR_CURRENT_HUMIDITY):
-                self._current_humidity = int(old_state.attributes[ATTR_CURRENT_HUMIDITY])
+                self._current_humidity = int(
+                    old_state.attributes[ATTR_CURRENT_HUMIDITY])
 
     @callback
     def _heating_changed(self, entity_id, old_state, new_state):
@@ -115,7 +112,7 @@ class HomeGWClimate(ClimateDevice):
         if new_state.state == STATE_ON:
             self._current_operation = 'heat'
         else:
-            self._current_operation = 'idle' 
+            self._current_operation = 'idle'
         self.schedule_update_ha_state()
 
     @callback
@@ -128,7 +125,7 @@ class HomeGWClimate(ClimateDevice):
 
         try:
             payload = json.loads(new_state.state)
-        except:
+        except Exception:
             _LOGGER.warning("Could not process: %s", new_state.state)
             return
 
@@ -144,7 +141,6 @@ class HomeGWClimate(ClimateDevice):
         self._battery = bool(payload[ATTR_HOMEGW_BATTERY])
 
         self.schedule_update_ha_state()
-
 
     @property
     def supported_features(self):
@@ -167,13 +163,15 @@ class HomeGWClimate(ClimateDevice):
         return self._unit_of_measurement
 
     @property
-    @Filter(FILTER_OUTLIER, window_size=3, precision=2, entity="unnamed",radius=2.0)
+    @Filter(FILTER_OUTLIER,
+            window_size=3, precision=2, entity="unnamed", radius=2.0)
     def current_temperature(self):
         """Return the current temperature."""
         return self._current_temperature
 
     @property
-    @Filter(FILTER_OUTLIER, window_size=3, precision=2, entity="unnamed",radius=2.0)
+    @Filter(FILTER_OUTLIER,
+            window_size=3, precision=2, entity="unnamed", radius=2.0)
     def current_humidity(self):
         """Return the current humidity."""
         return self._current_humidity
@@ -189,8 +187,6 @@ class HomeGWClimate(ClimateDevice):
         attrs = {
             ATTR_CURRENT_TEMPERATURE: self.current_temperature,
             ATTR_CURRENT_HUMIDITY: self.current_humidity,
-#            ATTR_TEMPERATURE: self._temperature,
-#            ATTR_HUMIDITY: self._humidity,
         }
         if self._channel is not None:
             attrs[ATTR_HOMEGW_CHANNEL] = self._channel
