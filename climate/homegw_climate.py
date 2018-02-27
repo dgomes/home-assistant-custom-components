@@ -162,19 +162,31 @@ class HomeGWClimate(ClimateDevice):
         """Return the unit of measurement."""
         return self._unit_of_measurement
 
-    @property
+    @Filter(FILTER_LOWPASS,
+            window_size=1, precision=0.25, entity="unnamed",time_constant=4)
     @Filter(FILTER_OUTLIER,
             window_size=3, precision=2, entity="unnamed", radius=2.0)
-    def current_temperature(self):
-        """Return the current temperature."""
+    def filter_current_temperature(self):
+        """Return the filtered current temperature."""
         return self._current_temperature
 
     @property
+    def current_temperature(self):
+        """Return the current temperature."""
+        return round(filter_current_temperature() / 0.25) * 0.25
+
+    @Filter(FILTER_LOWPASS,
+            window_size=1, precision=0.25, entity="unnamed",time_constant=4)
     @Filter(FILTER_OUTLIER,
             window_size=3, precision=2, entity="unnamed", radius=2.0)
+    def filter_current_humidity(self):
+        """Return the filtered current humidity."""
+        return self._current_humidity
+
+    @property
     def current_humidity(self):
         """Return the current humidity."""
-        return self._current_humidity
+        return round(filter_current_humidity() / 0.25) * 0.25
 
     @property
     def current_operation(self):
