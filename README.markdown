@@ -52,3 +52,5 @@ weather:
 # The *filter_helper.py*
 
 This file provides a decorator class used in the homegw_climate and homegw_weather platforms. It has a dependency in the filter sensor which actually implements the filters.
+
+*filter.py* is currently waiting for merge in home assistant repo. [#12650](https://github.com/home-assistant/home-assistant/pull/12650)
