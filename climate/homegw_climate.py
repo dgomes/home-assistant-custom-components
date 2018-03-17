@@ -11,7 +11,7 @@ import voluptuous as vol
 from homeassistant.components.climate import (
     ClimateDevice, SUPPORT_TARGET_HUMIDITY_LOW,
     ATTR_CURRENT_HUMIDITY, ATTR_CURRENT_TEMPERATURE,
-    PLATFORM_SCHEMA, STATE_UNKNOWN)
+    PLATFORM_SCHEMA, STATE_UNKNOWN, STATE_HEAT, STATE_IDLE)
 from homeassistant.const import (
     TEMP_CELSIUS, CONF_NAME, STATE_ON)
 from homeassistant.core import callback
@@ -77,7 +77,7 @@ class HomeGWClimate(ClimateDevice):
         self._unit_of_measurement = TEMP_CELSIUS
         self._support_flags = SUPPORT_FLAGS
 
-        self._current_operation = 'idle'
+        self._current_operation = STATE_IDLE 
         self._current_temperature = None
         self._current_humidity = None
         self._temperature = target_temp
@@ -110,9 +110,9 @@ class HomeGWClimate(ClimateDevice):
             return
 
         if new_state.state == STATE_ON:
-            self._current_operation = 'heat'
+            self._current_operation = STATE_HEAT 
         else:
-            self._current_operation = 'idle'
+            self._current_operation = STATE_IDLE
         self.schedule_update_ha_state()
 
     @callback
@@ -164,7 +164,7 @@ class HomeGWClimate(ClimateDevice):
 
     @property
     @Filter(FILTER_LOWPASS,
-            window_size=1, precision=0, entity="unnamed",time_constant=4)
+            window_size=1, precision=1, entity="unnamed",time_constant=4)
     @Filter(FILTER_OUTLIER,
             window_size=3, precision=2, entity="unnamed", radius=2.0)
     def current_temperature(self):
@@ -173,9 +173,9 @@ class HomeGWClimate(ClimateDevice):
 
     @property
     @Filter(FILTER_LOWPASS,
-            window_size=1, precision=0, entity="unnamed",time_constant=4)
+            window_size=1, precision=1, entity="unnamed",time_constant=4)
     @Filter(FILTER_OUTLIER,
-            window_size=3, precision=2, entity="unnamed", radius=2.0)
+            window_size=3, precision=2, entity="unnamed", radius=3.0)
     def current_humidity(self):
         """Return the current humidity."""
         return self._current_humidity
