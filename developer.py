@@ -54,8 +54,6 @@ async def async_setup(hass, config):
         hass.states.async_set(ENTITY_ID, last_state.state,
                               {ATTR_FRIENDLY_NAME: FRIENDLY_NAME})
 
-    installed_platforms = [p for p in list(hass.config.components) if "." in p]
-
     def check_new_pullrequests(now):
         """Check on github for pull requests on platforms currently running."""
         from github import Github
@@ -65,6 +63,8 @@ async def async_setup(hass, config):
         repository = organization.get_repo(HOMEASSITANT_REPO)
 
         last_signaled_pr = hass.states.get(ENTITY_ID)
+
+        installed_platforms = [p for p in list(hass.config.components) if "." in p]
 
         pr_list = []
         for pull_request in repository.get_pulls():
