@@ -49,7 +49,7 @@ async def async_setup(hass, config):
     _LOGGER.debug("Github token = %s", github_personal_token)
 
     last_state = await async_get_last_state(hass, ENTITY_ID)
-    _LOGGER.debug(last_state)
+    _LOGGER.debug("Last state: %s", last_state)
     if last_state:
         hass.states.async_set(ENTITY_ID, last_state.state,
                               {ATTR_FRIENDLY_NAME: FRIENDLY_NAME})
@@ -57,14 +57,18 @@ async def async_setup(hass, config):
     def check_new_pullrequests(now):
         """Check on github for pull requests on platforms currently running."""
         from github import Github
+        _LOGGER.debug("check_new_pullrequests")
 
         github_client = Github(github_personal_token)
         organization = github_client.get_organization(HOMEASSITANT_ORGANIZATION)
         repository = organization.get_repo(HOMEASSITANT_REPO)
 
         last_signaled_pr = hass.states.get(ENTITY_ID)
+        _LOGGER.debug("Last signaled PR: %s", last_signaled_pr)
 
-        installed_platforms = [p for p in list(hass.config.components) if "." in p]
+        installed_platforms = [p.split('.')[1] for p in list(hass.config.components) if "." in p]
+        installed_platforms = set([p for p in installed_platforms if p not in ['homeassistant']])
+        _LOGGER.debug(installed_platforms)
 
         pr_list = []
         for pull_request in repository.get_pulls():
@@ -80,14 +84,15 @@ async def async_setup(hass, config):
                     break
                 for platform in installed_platforms:
                     if not found and\
-                        platform.split('.')[1] in changed_file.filename:
+                        platform in changed_file.filename.split('/')[-1]:
                         _LOGGER.debug("FOUND an interesting PR %s",
                                       pull_request.number)
                         hass.components.persistent_notification.create(
-                            '&#34;{}: {}<br />'
-                            '{}'
+                            '&#35;{}: {}<br />'
+                            '{}<br />'
+                            'You are using {}'
                             ''.format(pull_request.number, pull_request.title,
-                                      pull_request.html_url),
+                                      pull_request.html_url, platform),
                             title="New Pull Request",
                             notification_id="{}{}".format(NOTIFICATION_ID,
                                                           pull_request.number))
@@ -98,7 +103,7 @@ async def async_setup(hass, config):
                         {ATTR_FRIENDLY_NAME: FRIENDLY_NAME})
 
     # Update daily, start 1 hour after startup
-    _dt = dt_util.utcnow() + timedelta(seconds=2)
+    _dt = dt_util.utcnow() + timedelta(seconds=20)
     event.async_track_utc_time_change(
         hass, check_new_pullrequests,
         hour=_dt.hour, minute=_dt.minute, second=_dt.second)
