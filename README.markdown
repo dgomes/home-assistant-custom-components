@@ -1,6 +1,16 @@
 # Home-Assistant Custom Components
 Some of my custom components for home-assistant (HA). (http://www.home-assistant.io)
 
+## Developer
+
+As a Home Assistant developer, I like to keep a close eye into whats new (Pull Requests - PR). This component uses github API to find PR related to the components currently in use in the running HA.
+
+```yaml
+developer:
+  github_personal_token: "1231231e23442342312312312312"
+```
+You can get your own personal token [here](https://github.com/settings/tokens)
+
 ## HomeGW Climate
 
 I'm currently using a cheap [433MHz Wireless sensor](https://www.banggood.com/Digoo-DG-R8H-433MHz-Wireless-Digital-Hygrometer-Thermometer-Weather-Station-Sensor-for-TH11300-8380-p-1178108.html?utm_source=google&utm_medium=cpc_elc&utm_campaign=ds-indu-sw1&utm_content=mandy&gclid=CjwKCAiA_c7UBRAjEiwApCZi8UAms95tLkgCzClVfbSxz7hbadrRKku94AhHCsKtQGwaZzlVXK2e2BoCs8YQAvD_BwE&cur_warehouse=CN) to monitor several rooms in the house.
@@ -20,7 +30,7 @@ The platform supports filtering by channel (ch) which is the only parameter the 
 
 The weather station is by all means a copy of the climate platform (or the other way round). The same serial sensor is monitored, only the Wireless sensor is different.
 
-## Example configuration
+### Example configuration
 
 ```yaml
 
@@ -46,9 +56,8 @@ weather:
   - platform: homegw_weather
     name: backyard
     serial_sensor: sensor.serial_sensor
-
 ``` 
 
-# The *filter_helper.py*
+## The *filter_helper.py*
 
 This file provides a decorator class used in the homegw_climate and homegw_weather platforms. It has a dependency in the [filter sensor](https://www.home-assistant.io/components/sensor.filter/) which actually implements the filters.
