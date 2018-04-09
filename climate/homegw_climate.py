@@ -164,12 +164,17 @@ class HomeGWClimate(ClimateDevice):
 
     @property
     @Filter(FILTER_LOWPASS,
-            window_size=1, precision=1, entity="unnamed",time_constant=4)
+            window_size=1, precision=1, entity="unnamed",time_constant=8)
     @Filter(FILTER_OUTLIER,
             window_size=3, precision=2, entity="unnamed", radius=2.0)
     def current_temperature(self):
         """Return the current temperature."""
         return self._current_temperature
+
+    @property
+    def target_temperature(self):
+        """Return the temperature we try to reach."""
+        return 21.0
 
     @property
     @Filter(FILTER_LOWPASS,
