@@ -46,7 +46,6 @@ async def async_setup(hass, config):
     """Set up the hardware owner and developer component."""
     conf = config.get(DOMAIN, {})
     github_personal_token = conf[CONF_GITHUB_PERSONAL_TOKEN]
-    _LOGGER.debug("Github token = %s", github_personal_token)
 
     last_state = await async_get_last_state(hass, ENTITY_ID)
     _LOGGER.debug("Last state: %s", last_state)
@@ -103,9 +102,9 @@ async def async_setup(hass, config):
                         {ATTR_FRIENDLY_NAME: FRIENDLY_NAME})
 
     # Update daily, start 1 hour after startup
-    _dt = dt_util.utcnow() + timedelta(seconds=20)
+    _dt = dt_util.utcnow() + timedelta(hours=1)
     event.async_track_utc_time_change(
         hass, check_new_pullrequests,
         hour=_dt.hour, minute=_dt.minute, second=_dt.second)
 
-    return True
+    return False 
