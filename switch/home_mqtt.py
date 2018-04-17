@@ -4,13 +4,12 @@ Support for switches controlled by home_mqtt.
 More information in https://github.com/dgomes/home_mqtt
 
 """
-import asyncio
 import logging
 
 import voluptuous as vol
 
 import homeassistant.components.mqtt as mqtt
-from homeassistant.components.switch import SwitchDevice 
+from homeassistant.components.switch import SwitchDevice
 from homeassistant.const import (
     CONF_OPTIMISTIC, CONF_ICON,
     CONF_NAME, CONF_PAYLOAD_OFF, CONF_PAYLOAD_ON, STATE_ON)
@@ -43,7 +42,7 @@ PLATFORM_SCHEMA = mqtt.MQTT_RW_PLATFORM_SCHEMA.extend({
 
 
 async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
-    """Set up a MQTT Light."""
+    """Set up a MQTT Switch."""
     if discovery_info is not None:
         config = PLATFORM_SCHEMA(discovery_info)
 
@@ -63,15 +62,16 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
     )])
 
 
-class HomeMqttLight(MqttAvailability, SwitchDevice):
-    """Representation of a MQTT light."""
+class HomeMqttSwitch(MqttAvailability, SwitchDevice):
+    """Representation of a MQTT switch."""
 
     def __init__(self, name, icon, topic, qos, payload, optimistic,
                  availability_topic, payload_available, payload_not_available):
-        """Initialize MQTT light."""
+        """Initialize MQTT switch."""
         super().__init__(availability_topic, qos, payload_available,
                          payload_not_available)
         self._name = name
+        self._icon = icon
         self._topic = topic
         self._qos = qos
         self._payload = payload
@@ -93,7 +93,7 @@ class HomeMqttLight(MqttAvailability, SwitchDevice):
 
     @property
     def should_poll(self):
-        """No polling needed for a MQTT light."""
+        """No polling needed for a MQTT switch."""
         return False
 
     @property
@@ -105,11 +105,6 @@ class HomeMqttLight(MqttAvailability, SwitchDevice):
     def is_on(self):
         """Return true if device is on."""
         return self._state
-
-    @pronperty
-    def assumed_state(self):
-        """Return true if we do optimistic updates."""
-        return self._optimistic
 
     @property
     def icon(self):
