@@ -61,3 +61,23 @@ weather:
 ## The *filter_helper.py*
 
 This file provides a decorator class used in the homegw_climate and homegw_weather platforms. It has a dependency in the [filter sensor](https://www.home-assistant.io/components/sensor.filter/) which actually implements the filters.
+
+## Motion Binary Sensor
+
+All my motion sensors publish an event through MQTT when something is detected. Since there is no event off, I had to write a special automation for each of the sensors to reset the motion sensor back to "clear". This custom component cleanly addresses that use case, it will automatically set the sensor off after being clear for a given **period**. You can also reset the sensor MQTT state immediately after the event by supplying a **command_topic** (usually the state topic + "/set").
+
+### Example configuration
+
+```yaml
+
+binary_sensor:
+  - platform: motion_mqtt
+    name: test_cozinha
+    state_topic: devices/sonoff_rfbridge/relay/0
+    command_topic: devices/sonoff_rfbridge/relay/0/set
+    availability_topic: devices/sonoff_rfbridge/status
+    payload_available: 1
+    payload_not_available: 0
+    period: 5:00
+
+```
