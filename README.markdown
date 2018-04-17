@@ -56,11 +56,28 @@ weather:
   - platform: homegw_weather
     name: backyard
     serial_sensor: sensor.serial_sensor
-``` 
+```
 
 ## The *filter_helper.py*
 
 This file provides a decorator class used in the homegw_climate and homegw_weather platforms. It has a dependency in the [filter sensor](https://www.home-assistant.io/components/sensor.filter/) which actually implements the filters.
+
+## Home MQTT (light, switch, cover)
+
+These components make it easy to expose lights, switches and covers controlled by a PLC programmed with [home_mqtt](https://github.com/dgomes/home_mqtt).
+
+### Example configuration
+
+```yaml
+light:
+  - platform: home_mqtt
+    name: Muros frente
+    command_topic: devices/m-duino/relay
+    relay: 9
+    payload_on: 951
+    payload_off: 950
+    optimistic: false
+```
 
 ## Motion Binary Sensor
 
