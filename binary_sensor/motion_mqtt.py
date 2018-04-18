@@ -76,14 +76,16 @@ class MotionSensor(MqttBinarySensor):
 
         # Call father MqttBinarySensor
         super().__init__(name, state_topic, availability_topic, 'motion',
-                         qos, force_update, payload_on, payload_off, payload_available,
-                         payload_not_available, value_template)
+                         qos, force_update, payload_on, payload_off,
+                         payload_available, payload_not_available,
+                         value_template)
 
         # Fill the blanks
         self._period = period
         self._expired = None
         self._command_topic = command_topic
-        self._entity_id = async_generate_entity_id(ENTITY_ID_FORMAT, name, hass=hass)
+        self._entity_id = async_generate_entity_id(ENTITY_ID_FORMAT,
+                                                   name, hass=hass)
 
         _LOGGER.debug("%s | period: %s", self._entity_id, period)
 
