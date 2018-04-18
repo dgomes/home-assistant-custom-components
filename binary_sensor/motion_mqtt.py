@@ -20,7 +20,8 @@ from homeassistant.components.mqtt import (
 from homeassistant.components.binary_sensor.mqtt import MqttBinarySensor
 from homeassistant.helpers.entity import async_generate_entity_id
 import homeassistant.helpers.config_validation as cv
-from homeassistant.helpers.event import async_track_same_state
+from homeassistant.helpers.event import async_track_point_in_utc_time
+from homeassistant.util import dt as dt_util
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -82,6 +83,7 @@ class MotionSensor(MqttBinarySensor):
         
         # Fill the blanks 
         self._period = period
+        self._expired = None
         self._command_topic = command_topic
         self._entity_id = async_generate_entity_id(ENTITY_ID_FORMAT, name, hass=hass) 
 
@@ -92,24 +94,35 @@ class MotionSensor(MqttBinarySensor):
         await super(MqttBinarySensor, self).async_added_to_hass()
 
         @callback
-        def reset_state():
+        def reset_state(now):
+            _LOGGER.debug("reset_state for %s", self._entity_id)
             self._state = False
             self.async_schedule_update_ha_state()
+            self._expired = None
 
         @callback
         def state_message_received(topic, payload, qos):
             """Handle a new received MQTT state message."""
+            _LOGGER.debug("%s: %s", topic, payload)
             if self._template is not None:
                 payload = self._template.async_render_with_possible_json_value(
                     payload)
             if payload == self._payload_on:
                 self._state = True
                 self.async_schedule_update_ha_state()
-                async_track_same_state(self.hass, self._period, reset_state, entity_ids=[self._entity_id],
-                    async_check_same_func=lambda *args: True)
                 if self._command_topic:
-                    mqtt.async_publish(self.hass, self._command_topic, self._payload_off, self._qos)
+                    mqtt.async_publish(self.hass,
+                                       self._command_topic,
+                                       self._payload_off,
+                                       self._qos)
+
+                if self._expired:
+                    self._expired()
+
+                self._expired = async_track_point_in_utc_time(
+                        self.hass, reset_state, dt_util.utcnow() + self._period)
             # ignore any other payloads
 
         await mqtt.async_subscribe(
             self.hass, self._state_topic, state_message_received, self._qos)
+
