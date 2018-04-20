@@ -107,4 +107,4 @@ async def async_setup(hass, config):
         hass, check_new_pullrequests,
         hour=_dt.hour, minute=_dt.minute, second=_dt.second)
 
-    return False 
+    return True 
