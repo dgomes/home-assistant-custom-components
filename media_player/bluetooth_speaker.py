@@ -29,14 +29,17 @@ DEFAULT_VOLUME = 0.5
 DEFAULT_VOLUME_STEP = 0.05
 DEFAULT_CACHE_DIR = "tts"
 
+CONF_DEVICE_NAME = 'device'
 CONF_VOLUME = 'volume'
 CONF_VOLUME_STEP = 'volume_step'
 CONF_CACHE_DIR = 'cache_dir'
 
 MP3_CMD = "mpg123 -q -a bluealsa"
+WAV_CMD = "aplay -q -a bluealsa"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+    vol.Required(CONF_DEVICE_NAME): cv.string,
     vol.Optional(CONF_VOLUME, default=DEFAULT_VOLUME):
         vol.All(vol.Coerce(float), vol.Range(min=0, max=1)),
     vol.Optional(CONF_VOLUME_STEP, default=DEFAULT_VOLUME_STEP):
@@ -49,6 +52,7 @@ _LOGGER = logging.getLogger(__name__)
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Setup the Bluetooth Speaker platform."""
     name = config.get(CONF_NAME)
+    device_name = config[CONF_DEVICE_NAME]
     volume = config.get(CONF_VOLUME)
     step = config.get(CONF_VOLUME_STEP)
 
@@ -56,26 +60,36 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
     if not os.path.isabs(cache_dir):
         cache_dir = hass.config.path(cache_dir)
 
-    add_devices([BluetoothSpeakerDevice(hass, name, volume, step, cache_dir)])
+    add_devices([BluetoothSpeakerDevice(hass, name, device_name, volume, step, cache_dir)])
     return True
 
 class BluetoothSpeakerDevice(MediaPlayerDevice):
     """Representation of a Bluetooth Speaker on the network."""
 
-    def __init__(self, hass, name, volume, step, cache_dir):
+    def __init__(self, hass, name, device_name, volume, step, cache_dir):
         """Initialize the device."""
         self._name = name
+        self._device_name = device_name
         self._is_standby = True
         self._step = step 
         self._cache_dir = cache_dir
+        self._volume = 0
+        self._muted = False
 
-    def update(self):
-        """Retrieve latest state."""
+        self.mixer = None
+
+    def set_mixer(self):
+        import alsaaudio
+
         for _mixer in alsaaudio.mixers(device="bluealsa"):
             if self._device_name in _mixer:
                 _LOGGER.info("Using Bluetooth Speaker %s", _mixer)
                 self.mixer = alsaaudio.Mixer(_mixer,device="bluealsa") 
-        
+ 
+    def update(self):
+        """Retrieve latest state."""
+        if not self.mixer:
+            self.set_mixer()
         self._volume = float(self.mixer.getvolume()[0])/100
         self._muted = True if 1 in self.mixer.getmute() else False
 
@@ -110,11 +124,15 @@ class BluetoothSpeakerDevice(MediaPlayerDevice):
 
     def set_volume_level(self, volume):
         """Set volume level, range 0..1."""
+        import alsaaudio
+
         self._volume = volume
         self.mixer.setvolume(int(volume*100), alsaaudio.MIXER_CHANNEL_ALL)
 
     def mute_volume(self, mute):
         """Mute the volume."""
+        import alsaaudio
+
         self._muted = mute
         self.mixer.setmute(1 if mute else 0, alsaaudio.MIXER_CHANNEL_ALL)
 
@@ -128,13 +146,13 @@ class BluetoothSpeakerDevice(MediaPlayerDevice):
 
     def play_media(self, media_type, media_id, **kwargs):
         """Send play commmand."""
-        _LOGGER.info('play_media: %s', media_id)
-        _LOGGER.debug(kwargs)
+        _LOGGER.debug('play_media: %s, %s', media_type, media_id)
         self._is_standby = False
 
         media_file = self._cache_dir + '/' + media_id[media_id.rfind('/') + 1:];
 
-        command = MP3_CMD + " {filename}".format(filename=media_file)
+        CMD = MP3_CMD if media_file[-3:] == "mp3" else WAV_CMD
+        command = CMD + " {filename}".format(filename=media_file)
         _LOGGER.debug('Executing command: %s', command)
         subprocess.call(command, shell=True)
 
