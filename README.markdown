@@ -1,6 +1,13 @@
 # Home-Assistant Custom Components
 Some of my custom components for home-assistant (HA). (http://www.home-assistant.io)
 
+* [Developer](#developer) - Get notifications of HA Pull-Requests
+* [HomeGW Climate](#homegw-climate) - Use an RF433Mhz weather logger as a climate sensor
+* [HomeGW Weather](#homegw-weather) - Use an RF433Mhz weather station
+* [Home MQTT](#home-mqtt-light-switch-cover) - Very custom setup to control a house through a PLC + MQTT
+* [Motion Binary Sensor](#motion-binary-sensor) - Avoid automations, streamline your motion sensor
+* [Bluetooth Speaker](#bluetooth-speaker) - Play TTS through your bluetooth speaker connected to HA.
+
 ## Developer
 
 As a Home Assistant developer, I like to keep a close eye into whats new (Pull Requests - PR). This component uses github API to find PR related to the components currently in use in the running HA.
@@ -58,7 +65,7 @@ weather:
     serial_sensor: sensor.serial_sensor
 ```
 
-## The *filter_helper.py*
+# The *filter_helper.py*
 
 This file provides a decorator class used in the homegw_climate and homegw_weather platforms. It has a dependency in the [filter sensor](https://www.home-assistant.io/components/sensor.filter/) which actually implements the filters.
 
