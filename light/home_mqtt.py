@@ -25,16 +25,11 @@ _LOGGER = logging.getLogger(__name__)
 
 DEPENDENCIES = ['mqtt']
 
-CONF_RELAY = 'relay'
-
-COMMAND_FORMAT = '{}/{}'
-
 DEFAULT_NAME = 'Home MQTT Light'
 DEFAULT_OPTIMISTIC = False
 
 PLATFORM_SCHEMA = mqtt.MQTT_RW_PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-    vol.Required(CONF_RELAY): cv.positive_int,
     vol.Required(CONF_PAYLOAD_OFF): cv.positive_int,
     vol.Required(CONF_PAYLOAD_ON): cv.positive_int,
     vol.Optional(CONF_OPTIMISTIC, default=DEFAULT_OPTIMISTIC): cv.boolean,
@@ -48,7 +43,7 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
 
     async_add_devices([HomeMqttLight(
         config.get(CONF_NAME),
-        COMMAND_FORMAT.format(config.get(CONF_COMMAND_TOPIC), config.get(CONF_RELAY)),
+        config.get(CONF_COMMAND_TOPIC)
         config.get(CONF_QOS),
         {
             'on': config.get(CONF_PAYLOAD_ON),
@@ -116,7 +111,7 @@ class HomeMqttLight(MqttAvailability, Light):
         """
 
         mqtt.async_publish(
-            self.hass, self._topic+'/set',
+            self.hass, self._topic,
             self._payload['on'], self._qos)
 
         # Optimistically assume that switch has changed state.
@@ -129,7 +124,7 @@ class HomeMqttLight(MqttAvailability, Light):
         This method is a coroutine.
         """
         mqtt.async_publish(
-            self.hass, self._topic+'/set',
+            self.hass, self._topic,
             self._payload['off'], self._qos)
 
         # Optimistically assume that switch has changed state.
