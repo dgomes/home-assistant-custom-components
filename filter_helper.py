@@ -58,7 +58,7 @@ class Filter(object):
                 return None
 
             Filter.logger.debug("%s(%s) -> %s", sensor_object.entity_id,
-                                new_state, filtered_state)
+                                new_state.state, filtered_state.state)
             return filtered_state.state
 
         return func_wrapper
