@@ -68,7 +68,7 @@ class BluetoothSpeakerDevice(MediaPlayerDevice):
         self._is_standby = True
         self._step = step
         self._cache_dir = cache_dir
-        self._volume = 0 
+        self._volume = 0
         self._muted = False
 
         self.mixer = None
