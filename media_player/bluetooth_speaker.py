@@ -139,15 +139,34 @@ class BluetoothSpeakerDevice(MediaPlayerDevice):
         """Volume down media player."""
         self.set_volume_level(self._volume-self._step)
 
+    def media_pause(self):
+        command = "killall {}".format(self._cmd)
+        _LOGGER.debug('Executing command: %s', command)
+        subprocess.call(command, shell=True)
+
     def play_media(self, media_type, media_id, **kwargs):
         """Send play commmand."""
         _LOGGER.debug('play_media: %s, %s', media_type, media_id)
         self._is_standby = False
+        
+        media_content = media_id
 
         media_file = self._cache_dir+'/'+media_id[media_id.rfind('/')+1:]
+        if os.path.isfile(media_file):
+            #Avoid http proxy
+            media_content = media_file
+        else:
+            command = MP3_CMD #if its an url its likely to be an MP3
 
-        command = MP3_CMD if media_file[-3:] == "mp3" else WAV_CMD
-        command += " {filename}".format(filename=media_file)
+        if media_content[-3:].lower() == "mp3":
+            command = MP3_CMD
+        elif media_content[-3:].lower() == "wav":
+            command = WAV_CMD
+        else:
+            _LOGGER.error("Don't know how to handle %s", media_content)
+
+        command += " {content}".format(content=media_content)
+        self._cmd = command[:command.find(' ')]
         _LOGGER.debug('Executing command: %s', command)
         subprocess.call(command, shell=True)
 
