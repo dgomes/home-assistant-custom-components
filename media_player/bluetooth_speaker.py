@@ -1,5 +1,6 @@
 """Support for a Bluetooth Speaker connected to a RPi3."""
 import os
+import shlex
 import subprocess
 import logging
 import voluptuous as vol
@@ -70,7 +71,7 @@ class BluetoothSpeakerDevice(MediaPlayerDevice):
         self._cache_dir = cache_dir
         self._volume = 0
         self._muted = False
-
+        self._proc = None
         self.mixer = None
 
     def _set_mixer(self):
@@ -87,6 +88,12 @@ class BluetoothSpeakerDevice(MediaPlayerDevice):
             self._set_mixer()
         self._volume = float(self.mixer.getvolume()[0])/100
         self._muted = True if 1 in self.mixer.getmute() else False
+
+        if self._proc:
+            self._proc.poll()
+            if self._proc.returncode is not None:
+                self._is_standby = True
+                self._proc = None
 
     @property
     def name(self):
@@ -140,13 +147,18 @@ class BluetoothSpeakerDevice(MediaPlayerDevice):
         self.set_volume_level(self._volume-self._step)
 
     def media_pause(self):
-        command = "killall {}".format(self._cmd)
-        _LOGGER.debug('Executing command: %s', command)
-        subprocess.call(command, shell=True)
+        if self._proc:
+            self._proc.terminate()
+            self._proc = None
+        self._is_standby = True
 
     def play_media(self, media_type, media_id, **kwargs):
         """Send play commmand."""
         _LOGGER.debug('play_media: %s, %s', media_type, media_id)
+
+        if not self._is_standby:
+            self.media_pause()
+
         self._is_standby = False
         
         media_content = media_id
@@ -163,11 +175,9 @@ class BluetoothSpeakerDevice(MediaPlayerDevice):
         elif media_content[-3:].lower() == "wav":
             command = WAV_CMD
         else:
-            _LOGGER.error("Don't know how to handle %s", media_content)
+            _LOGGER.error("Don't know how to handle %s, probably mpg123 can handle it", media_content)
 
         command += " {content}".format(content=media_content)
-        self._cmd = command[:command.find(' ')]
         _LOGGER.debug('Executing command: %s', command)
-        subprocess.call(command, shell=True)
-
-        self._is_standby = True
+        args = shlex.split(command)
+        self._proc = subprocess.Popen(args)
