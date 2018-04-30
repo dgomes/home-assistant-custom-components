@@ -152,18 +152,14 @@ class HomeGWWeather(WeatherEntity):
     @property
     def device_state_attributes(self):
         """Return the state attributes."""
-        attrs = {
-            ATTR_HOMEGW_TEMPERATURE: self._temperature,
-            ATTR_HOMEGW_HUMIDITY: self._humidity,
-        }
+        attrs = super().state_attributes
+
         if self._channel is not None:
             attrs[ATTR_HOMEGW_CHANNEL] = self._channel
         if self._id is not None:
             attrs[ATTR_HOMEGW_ID] = self._id
         if self._battery is not None:
             attrs[ATTR_HOMEGW_BATTERY] = self._battery
-        if self._pressure is not None:
-            attrs[ATTR_HOMEGW_PRESSURE] = self._pressure
         return attrs
 
     @property
