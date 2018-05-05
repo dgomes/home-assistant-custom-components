@@ -37,10 +37,13 @@ class Filter(object):
             filter_algorithm (string): must be one of the defined filters
             kwargs (dict): arguments to be passed to the specific filter
         """
-        module_name = inspect.getmodule(inspect.stack()[1][0]).__name__
-        Filter.logger = logging.getLogger(module_name)
-        Filter.logger.debug("Filter %s(%s) on %s", filter_algorithm, kwargs,
-                            module_name)
+        try:
+            module_name = inspect.getmodule(inspect.stack()[1][0]).__name__
+            Filter.logger = logging.getLogger(module_name)
+            Filter.logger.debug("Filter %s(%s) on %s", filter_algorithm, kwargs,
+                                module_name)
+        except:
+            Filter.logger = logging.getLogger("unknown_module")
 
         if filter_algorithm in FILTERS:
             self.filter = FILTERS[filter_algorithm](**kwargs)

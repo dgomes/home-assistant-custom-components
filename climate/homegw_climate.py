@@ -18,7 +18,9 @@ from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import async_get_last_state
 import homeassistant.helpers.config_validation as cv
-from ..filter_helper import Filter, FILTER_OUTLIER, FILTER_LOWPASS
+import sys
+sys.path.append('/home/homeassistant/.homeassistant/custom_components')
+from filter_helper import Filter, FILTER_OUTLIER, FILTER_LOWPASS
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -18,7 +18,9 @@ from homeassistant.components.weather import (
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import async_get_last_state
-from ..filter_helper import Filter, FILTER_OUTLIER
+import sys
+sys.path.append('/home/homeassistant/.homeassistant')
+from custom_components.filter_helper import Filter, FILTER_OUTLIER
 
 
 _LOGGER = logging.getLogger(__name__)
