@@ -38,12 +38,12 @@ class Filter(object):
             kwargs (dict): arguments to be passed to the specific filter
         """
         try:
-            module_name = inspect.getmodule(inspect.stack()[1][0]).__name__
+            module_name = inspect.stack()[1][0].f_globals['__name__']
             Filter.logger = logging.getLogger(module_name)
             Filter.logger.debug("Filter %s(%s) on %s", filter_algorithm, kwargs,
                                 module_name)
         except:
-            Filter.logger = logging.getLogger("unknown_module")
+            Filter.logger = logging.getLogger("custom_components")
 
         if filter_algorithm in FILTERS:
             self.filter = FILTERS[filter_algorithm](**kwargs)

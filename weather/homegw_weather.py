@@ -18,9 +18,10 @@ from homeassistant.components.weather import (
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import async_get_last_state
+import os
 import sys
-sys.path.append('/home/homeassistant/.homeassistant')
-from custom_components.filter_helper import Filter, FILTER_OUTLIER
+sys.path.append(os.sep.join(os.path.abspath(__file__).split(os.sep)[:-2]))
+from filter_helper import Filter, FILTER_OUTLIER
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -108,7 +109,7 @@ class HomeGWWeather(WeatherEntity):
         self._battery = bool(payload[ATTR_HOMEGW_BATTERY])
 
         if payload.get(ATTR_HOMEGW_PRESSURE) is not None:
-            self._pressure = int(payload[ATTR_HOMEGW_PRESSURE])
+            self._pressure = int(payload[ATTR_HOMEGW_PRESSURE])/100 #unit hPa
 
         self.schedule_update_ha_state()
 
