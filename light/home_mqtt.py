@@ -43,7 +43,7 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
 
     async_add_devices([HomeMqttLight(
         config.get(CONF_NAME),
-        config.get(CONF_COMMAND_TOPIC)
+        config.get(CONF_COMMAND_TOPIC),
         config.get(CONF_QOS),
         {
             'on': config.get(CONF_PAYLOAD_ON),
