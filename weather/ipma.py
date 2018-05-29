@@ -5,25 +5,20 @@ For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/weather.ipma/
 """
 import logging
-import asyncio
-import aiohttp
 import async_timeout
 
-from datetime import timedelta
 import voluptuous as vol
 
 from homeassistant.components.weather import (
-    WeatherEntity, PLATFORM_SCHEMA, ATTR_FORECAST_CONDITION, ATTR_FORECAST_PRECIPITATION,
-    ATTR_FORECAST_TEMP, ATTR_FORECAST_TEMP_LOW, ATTR_FORECAST_TIME)
+    WeatherEntity, PLATFORM_SCHEMA, ATTR_FORECAST_CONDITION,
+    ATTR_FORECAST_PRECIPITATION, ATTR_FORECAST_TEMP,
+    ATTR_FORECAST_TEMP_LOW, ATTR_FORECAST_TIME)
 from homeassistant.const import \
     CONF_NAME, TEMP_CELSIUS, CONF_LATITUDE, CONF_LONGITUDE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers.event import (
-    async_track_point_in_utc_time)
-from homeassistant.util import dt as dt_util
 
-REQUIREMENTS = ['pyipma==1.0.2']
+REQUIREMENTS = ['pyipma==1.0.3']
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,17 +26,15 @@ ATTRIBUTION = 'Instituto Português do Mar e Atmosfera'
 
 DATA_CONDITION = 'ipma_condition'
 
-DEFAULT_TIMEFRAME = 60
-
 CONDITION_CLASSES = {
-    'cloudy': [4,5,24,25,27],
-    'fog': [16,17,26],
+    'cloudy': [4, 5, 24, 25, 27],
+    'fog': [16, 17, 26],
     'hail': [21, 22],
     'lightning': [19],
     'lightning-rainy': [20, 23],
-    'partlycloudy': [2,3],
+    'partlycloudy': [2, 3],
     'pouring': [8, 11],
-    'rainy': [6,7,9,10,12,13,14,15],
+    'rainy': [6, 7, 9, 10, 12, 13, 14, 15],
     'snowy': [18],
     'snowy-rainy': [],
     'sunny': [1],
@@ -57,7 +50,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
-async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
+async def async_setup_platform(hass, config, async_add_devices,
+                               discovery_info=None):
     """Set up the ipma platform."""
     latitude = config.get(CONF_LATITUDE, hass.config.latitude)
     longitude = config.get(CONF_LONGITUDE, hass.config.longitude)
@@ -66,18 +60,13 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
         _LOGGER.error("Latitude or longitude not set in Home Assistant config")
         return False
 
-    coordinates = {CONF_LATITUDE:  float(latitude),
-                   CONF_LONGITUDE: float(longitude)}
-
-    # create weather station:
-
     from pyipma import Station
 
     websession = async_get_clientsession(hass)
     with async_timeout.timeout(10, loop=hass.loop):
-        station = await Station.get(websession, float(latitude), float(longitude))
+        station = await Station.get(websession, float(latitude),
+                                    float(longitude))
 
-    # create weather device:
     _LOGGER.debug("Initializing ipma weather: coordinates %s, %s",
                   latitude, longitude)
 
@@ -94,7 +83,6 @@ class IPMAWeather(WeatherEntity):
 
     async def async_update(self):
         """Update Condition and Forecast."""
-        websession = async_get_clientsession(self.hass)
         with async_timeout.timeout(10, loop=self.hass.loop):
             self._condition = await self._station.observation()
             self._forecast = await self._station.forecast()
@@ -102,7 +90,7 @@ class IPMAWeather(WeatherEntity):
     @property
     def attribution(self):
         """Return the attribution."""
-        return ATTRIBUTION 
+        return ATTRIBUTION
 
     @property
     def name(self):
@@ -112,8 +100,8 @@ class IPMAWeather(WeatherEntity):
     @property
     def condition(self):
         """Return the current condition."""
-        return [k for k, v in CONDITION_CLASSES.items() if
-            int(self._forecast[0].idWeatherType) in v][0]
+        return [k for k, v in CONDITION_CLASSES.items()
+                if self._forecast[0].idWeatherType in v][0]
 
     @property
     def temperature(self):
@@ -133,7 +121,7 @@ class IPMAWeather(WeatherEntity):
     @property
     def visibility(self):
         """Return the current visibility."""
-        return None 
+        return None
 
     @property
     def wind_speed(self):
@@ -143,7 +131,7 @@ class IPMAWeather(WeatherEntity):
     @property
     def wind_bearing(self):
         """Return the current wind bearing (degrees)."""
-        return self._condition.winddirection[0] #TODO string to degrees
+        return self._condition.winddirection[0]
 
     @property
     def temperature_unit(self):
@@ -156,13 +144,13 @@ class IPMAWeather(WeatherEntity):
         if self._forecast:
             fcdata_out = []
             for data_in in self._forecast:
-                # remap keys from external library to
-                # keys understood by the weather component:
                 data_out = {}
                 data_out[ATTR_FORECAST_TIME] = data_in.forecastDate
-                data_out[ATTR_FORECAST_CONDITION] = [k for k, v in CONDITION_CLASSES.items() if int(data_in.idWeatherType) in v][0]
-                data_out[ATTR_FORECAST_TEMP_LOW] = float(data_in.tMin)
-                data_out[ATTR_FORECAST_TEMP] = float(data_in.tMax)
+                data_out[ATTR_FORECAST_CONDITION] =\
+                    [k for k, v in CONDITION_CLASSES.items()
+                     if int(data_in.idWeatherType) in v][0]
+                data_out[ATTR_FORECAST_TEMP_LOW] = data_in.tMin
+                data_out[ATTR_FORECAST_TEMP] = data_in.tMax
                 data_out[ATTR_FORECAST_PRECIPITATION] = data_in.precipitaProb
 
                 fcdata_out.append(data_out)
