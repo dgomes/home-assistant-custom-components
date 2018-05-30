@@ -8,6 +8,7 @@ import logging
 import async_timeout
 
 import voluptuous as vol
+from datetime import timedelta
 
 from homeassistant.components.weather import (
     WeatherEntity, PLATFORM_SCHEMA, ATTR_FORECAST_CONDITION,
@@ -17,14 +18,17 @@ from homeassistant.const import \
     CONF_NAME, TEMP_CELSIUS, CONF_LATITUDE, CONF_LONGITUDE
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers import config_validation as cv
+from homeassistant.util import Throttle
 
-REQUIREMENTS = ['pyipma==1.0.5']
+REQUIREMENTS = ['pyipma==1.1.2']
 
 _LOGGER = logging.getLogger(__name__)
 
 ATTRIBUTION = 'Instituto Português do Mar e Atmosfera'
 
-DATA_CONDITION = 'ipma_condition'
+ATTR_WEATHER_DESCRIPTION = "description"
+
+MIN_TIME_BETWEEN_UPDATES = timedelta(minutes=30)
 
 CONDITION_CLASSES = {
     'cloudy': [4, 5, 24, 25, 27],
@@ -81,11 +85,13 @@ class IPMAWeather(WeatherEntity):
         self._stationname = config.get(CONF_NAME, station.local)
         self._station = station
 
+    @Throttle(MIN_TIME_BETWEEN_UPDATES)
     async def async_update(self):
         """Update Condition and Forecast."""
         with async_timeout.timeout(10, loop=self.hass.loop):
             self._condition = await self._station.observation()
             self._forecast = await self._station.forecast()
+            self.description = self._forecast[0].description
 
     @property
     def attribution(self):
@@ -106,17 +112,17 @@ class IPMAWeather(WeatherEntity):
     @property
     def temperature(self):
         """Return the current temperature."""
-        return float(self._condition.temperature[0])
+        return float(self._condition.temperature)
 
     @property
     def pressure(self):
         """Return the current pressure."""
-        return float(self._condition.pressure[0])
+        return float(self._condition.pressure)
 
     @property
     def humidity(self):
         """Return the name of the sensor."""
-        return int(self._condition.humidity[0])
+        return int(self._condition.humidity)
 
     @property
     def visibility(self):
@@ -126,12 +132,12 @@ class IPMAWeather(WeatherEntity):
     @property
     def wind_speed(self):
         """Return the current windspeed."""
-        return float(self._condition.windspeed[0])
+        return float(self._condition.windspeed)
 
     @property
     def wind_bearing(self):
         """Return the current wind bearing (degrees)."""
-        return self._condition.winddirection[0]
+        return self._condition.winddirection
 
     @property
     def temperature_unit(self):
@@ -156,3 +162,13 @@ class IPMAWeather(WeatherEntity):
                 fcdata_out.append(data_out)
 
             return fcdata_out
+
+    @property
+    def state_attributes(self):
+        """Return the state attributes."""
+        data = super().state_attributes
+        
+        if self.description:
+            data[ATTR_WEATHER_DESCRIPTION] = self.description
+
+        return data
