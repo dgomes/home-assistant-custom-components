@@ -106,6 +106,23 @@ binary_sensor:
 
 ```
 
+## HTTP Push Camera
+
+This is a very special kind of camera that only updates it's image through the REST API.
+The camera can be used together with external motion detection daemons that will issue HTTP POST messages with the motion captured images towards Home Assistant API. 
+
+```bash
+curl -X POST -H "x-ha-access: PASSWORD" -F "image=@very_nice_picture.jpg" http://homeassistant.local:8123/api/camera_http_push/camera.http_push_camera
+```
+
+### Example configuration
+
+```yaml
+camera:
+  - platform: http_push
+    name: http_push_camera
+```
+
 ## Bluetooth Speaker
 
 This is a **media_player** platform that enables playback of _mp3_ and _wav_ files through a Bluetooth Speaker paired with a Linux Host using the [bluealsa](https://github.com/Arkq/bluez-alsa) stack.
