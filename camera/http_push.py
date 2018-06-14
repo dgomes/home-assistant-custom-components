@@ -6,6 +6,7 @@ https://home-assistant.io/components/camera.http_push/
 """
 import logging
 
+import homeassistant.util.dt as dt_util
 import voluptuous as vol
 
 from homeassistant.components.camera import Camera, PLATFORM_SCHEMA
@@ -20,6 +21,9 @@ API_URL = "/api/camera_http_push/{entity_id}"
 DEFAULT_NAME = 'HTTP Push Camera'
 
 BLANK_IMAGE_SIZE = (320, 240)
+
+ATTR_LAST_MOTION = "last_motion"
+ATTR_FILENAME = "filename"
 
 REQUIREMENTS = ['pillow==5.0.0']
 
@@ -60,7 +64,7 @@ class CameraPushReceiver(HomeAssistantView):
         try:
             data = await request.post()
             _LOGGER.debug("Received Camera push: %s", data['image'])
-            _camera.update_image(data['image'].file.read())
+            _camera.update_image(data['image'].file.read(), data['image'].filename)
         except ValueError:
             return self.json_message('Invalid POST', HTTP_BAD_REQUEST)
 
@@ -73,6 +77,8 @@ class HttpPushCamera(Camera):
         super().__init__()
         self._name = name
         self._motion_status = False
+        self._last_update = None
+        self._filename = None
 
         from PIL import Image
         import io
@@ -84,9 +90,12 @@ class HttpPushCamera(Camera):
 
         self._current_image = imgbuf.getvalue()
 
-    def update_image(self, image):
+    def update_image(self, image, filename):
         """Update the camera image."""
         self._current_image = image
+        self._last_update = dt_util.utcnow()
+        self._filename = filename
+
         self.schedule_update_ha_state()
 
     def camera_image(self):
@@ -106,3 +115,13 @@ class HttpPushCamera(Camera):
     def motion_detection_enabled(self):
         """Camera Motion Detection Status."""
         return self._motion_status
+
+    @property
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        return {
+            name: value for name, value in (
+                (ATTR_LAST_MOTION, self._last_update),
+                (ATTR_FILENAME, self._filename),
+            ) if value is not None
+        }
