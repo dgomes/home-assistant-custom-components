@@ -125,7 +125,7 @@ class HomeGWWeather(WeatherEntity):
 
     @property
     @Filter(FILTER_OUTLIER,
-            window_size=3, precision=2, entity="unnamed", radius=1.0)
+            window_size=3, precision=2, entity="unnamed", radius=2.0)
     def temperature(self):
         """Return the temperature."""
         return self._temperature
@@ -137,7 +137,7 @@ class HomeGWWeather(WeatherEntity):
 
     @property
     @Filter(FILTER_OUTLIER,
-            window_size=3, precision=2, entity="unnamed", radius=1.0)
+            window_size=3, precision=2, entity="unnamed", radius=5.0)
     def humidity(self):
         """Return the humidity."""
         return self._humidity
