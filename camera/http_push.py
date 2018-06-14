@@ -9,6 +9,7 @@ import datetime
 
 import homeassistant.util.dt as dt_util
 import voluptuous as vol
+from collections import deque
 
 from homeassistant.components.camera import Camera, PLATFORM_SCHEMA, DOMAIN,\
     STATE_IDLE, STATE_RECORDING, STATE_STREAMING
@@ -96,6 +97,7 @@ class HttpPushCamera(Camera):
         image.save(imgbuf, "JPEG")
 
         self._current_image = imgbuf.getvalue()
+        self.queue = deque()
 
     @property
     def state(self):
@@ -103,10 +105,10 @@ class HttpPushCamera(Camera):
 
     def update_image(self, image, filename):
         """Update the camera image."""
-        self._current_image = image
         self._last_update = dt_util.utcnow()
         self._filename = filename
         self._state = STATE_RECORDING
+        self.queue.append(image)
 
         @callback
         def reset_state(now):
@@ -132,6 +134,10 @@ class HttpPushCamera(Camera):
 
     def camera_image(self):
         """Return a still image response."""
+        if len(self.queue):
+            image = self.queue.popleft()
+            self._current_image = image
+
         return self._current_image
 
     async def async_camera_image(self):
