@@ -5,14 +5,18 @@ For more details about this platform, please refer to the documentation
 https://home-assistant.io/components/camera.http_push/
 """
 import logging
+import datetime
 
 import homeassistant.util.dt as dt_util
 import voluptuous as vol
 
-from homeassistant.components.camera import Camera, PLATFORM_SCHEMA
+from homeassistant.components.camera import Camera, PLATFORM_SCHEMA, DOMAIN,\
+    STATE_IDLE, STATE_RECORDING, STATE_STREAMING
+from homeassistant.core import callback
 from homeassistant.components.http.view import HomeAssistantView
 from homeassistant.const import CONF_NAME, HTTP_BAD_REQUEST
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.event import async_track_point_in_utc_time
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,6 +83,9 @@ class HttpPushCamera(Camera):
         self._motion_status = False
         self._last_update = None
         self._filename = None
+        self._expired = None
+        self._state = STATE_IDLE
+        self._period = datetime.timedelta(seconds=5) #TODO IDLE TIME
 
         from PIL import Image
         import io
@@ -90,13 +97,38 @@ class HttpPushCamera(Camera):
 
         self._current_image = imgbuf.getvalue()
 
+    @property
+    def state(self):
+        return self._state
+
     def update_image(self, image, filename):
         """Update the camera image."""
         self._current_image = image
         self._last_update = dt_util.utcnow()
         self._filename = filename
+        self._state = STATE_RECORDING
+
+        @callback
+        def reset_state(now):
+            """Set state to off after no motion for a period of time."""
+            self._state = STATE_IDLE 
+            self.async_schedule_update_ha_state()
+            self._expired = None
+
+        if self._expired:
+            self._expired()
+
+        self._expired = async_track_point_in_utc_time(
+            self.hass, reset_state, dt_util.utcnow() + self._period)
 
         self.schedule_update_ha_state()
+
+        self.hass.bus.fire(DOMAIN, {
+            'entity_id': self.entity_id,
+            'filename': self._filename,
+            'last_update': self._last_update,
+            'name': self.name,
+        })
 
     def camera_image(self):
         """Return a still image response."""
