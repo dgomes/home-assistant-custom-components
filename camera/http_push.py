@@ -29,6 +29,7 @@ BLANK_IMAGE_SIZE = (320, 240)
 
 ATTR_LAST_MOTION = "last_motion"
 ATTR_FILENAME = "filename"
+ATTR_QUEUE = "queue"
 
 REQUIREMENTS = ['pillow==5.0.0']
 
@@ -113,9 +114,11 @@ class HttpPushCamera(Camera):
         @callback
         def reset_state(now):
             """Set state to off after no motion for a period of time."""
-            self._state = STATE_IDLE 
+            self._state = STATE_IDLE
+            self.queue.clear()
             self.async_schedule_update_ha_state()
             self._expired = None
+            _LOGGER.debug("Reset state")
 
         if self._expired:
             self._expired()
@@ -161,5 +164,6 @@ class HttpPushCamera(Camera):
             name: value for name, value in (
                 (ATTR_LAST_MOTION, self._last_update),
                 (ATTR_FILENAME, self._filename),
+                (ATTR_QUEUE, len(self.queue)),
             ) if value is not None
         }
