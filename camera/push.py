@@ -79,6 +79,7 @@ class CameraPushReceiver(HomeAssistantView):
                                        data[self._image].filename)
         except ValueError as value_error:
             _LOGGER.error("Unknown value %s", value_error)
+            _LOGGER.error("max_size = %s", request._client_max_size)
             return self.json_message('Invalid POST', HTTP_BAD_REQUEST)
         except KeyError as key_error:
             _LOGGER.error('In your POST message %s', key_error)
