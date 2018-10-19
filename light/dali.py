@@ -4,9 +4,7 @@ Support for DALI lights.
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/light.dali/
 """
-import usb
 import logging
-from subprocess import check_output, CalledProcessError, STDOUT
 
 import voluptuous as vol
 
@@ -15,71 +13,79 @@ from homeassistant.components.light import (
     ATTR_BRIGHTNESS, SUPPORT_BRIGHTNESS, Light, PLATFORM_SCHEMA)
 import homeassistant.helpers.config_validation as cv
 
+REQUIREMENTS = ['python-dali']
+
 _LOGGER = logging.getLogger(__name__)
 
 SUPPORT_DALI = SUPPORT_BRIGHTNESS
 
+CONF_MAX_GEARS = "max_gears"
+
+MAX_RANGE = 64
+
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Required(CONF_DEVICES): vol.All(cv.ensure_list, [
-        {
-            vol.Required(CONF_ID): cv.string,
-            vol.Required(CONF_NAME): cv.string,
-        }
-    ]),
+    vol.Required(CONF_NAME): cv.string,
+    vol.Optional(CONF_MAX_GEARS, default=MAX_RANGE): cv.positive_int,
 })
+
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
     """Set up the DALI Light platform."""
 
-    from threading import RLock
-    from dali.driver.hasseb import HassebUsb
+    from dali.driver.hasseb import SyncHassebDALIUSBDriver 
+    from dali.address import Short
+    from dali.command import YesNoResponse, Response
+    import dali.gear.general as gear
 
-    driver = HassebUsb()
-    driver_lock = RLock()
+    dali_driver = SyncHassebDALIUSBDriver() 
+    import threading
+    lock = threading.RLock()
 
-    add_devices(DALILight(driver, driver_lock, ballast) for ballast in config[CONF_DEVICES])
+    lamps = []
+    for lamp in range(0,config[CONF_MAX_GEARS]):
+        try:
+            _LOGGER.debug("Searching for Gear on address <{}>".format(lamp))
+            r = dali_driver.send(gear.QueryControlGearPresent(Short(lamp)))
+            if isinstance(r, YesNoResponse) and r.value:
+                lamps.append(Short(lamp))
+        except Exception as e:
+            #Not present
+            _LOGGER.error("Error while QueryControlGearPresent: {}".format(e))
+            break
 
-def to_dali_level(level):
-    """Convert the given HASS light level (0-255) to DALI (0-254)."""
-    return int((level * 254) / 255)
-
-
-def to_hass_level(level):
-    """Convert the given DALI (0-254) light level to HASS (0-255)."""
-    return int((level * 255) / 254)
+    add_devices([DALILight(dali_driver, lock, config[CONF_NAME], l) for l in lamps])
+    
 
 class DALILight(Light):
     """Representation of an DALI Light."""
 
-    def __init__(self, driver, driver_lock, ballast):
-        from dali.address import Short
-        from dali.gear.general import QueryStatus 
-        from dali.gear.general import QueryStatusResponse 
-        from dali.gear.general import DTR0 
-        from dali.gear.general import QueryPowerOnLevel
-        from dali.gear.general import QueryLampPowerOn
+    def __init__(self, driver, driver_lock, controller_name, ballast):
+        from dali.gear.general import QueryActualLevel
+        from dali.command import ResponseError, MissingResponse
         """Initialize a DALI Light."""
-        self._id = ballast['id']
-        self._name = ballast['name']
         self._brightness = 0
         self._state = False       
- 
+        self._name = "{}_{}".format(controller_name, ballast.address)
+        self.attributes = {"short_address": ballast.address}
+        
         self.driver = driver
         self.driver_lock = driver_lock
-        self.addr = Short(int(self._id))
+        self.addr = ballast
 
+        try:
+            with self.driver_lock:
+                cmd = QueryActualLevel(self.addr)
+                r = self.driver.send(cmd)
+                if r.value != None and r.value.as_integer < 255:
+                    self._brightness = r.value.as_integer
+                    if r.value.as_integer > 0:
+                        r.state = True
 
-        with self.driver_lock:
-            cmd = QueryPowerOnLevel(self.addr)
-            r = self.driver.send(cmd)
-            if r.value != None:
-                self._brightness = to_hass_level(r.value.as_integer)
-
-        with self.driver_lock:
-            cmd = QueryLampPowerOn(self.addr)
-            r = self.driver.send(cmd)
-            if r.value != None:
-                self._state = r.value 
+        except ResponseError as e:
+            _LOGGER.error("Response error on __init__")
+        except MissingResponse as e:
+            self._brightness = None
+            self._state = None
 
     @property
     def name(self):
@@ -87,10 +93,19 @@ class DALILight(Light):
         return self._name
 
     @property
+    def unique_id(self):
+        """Return the Short Address of this light."""
+        return self.addr.address
+
+    @property
     def brightness(self):
         """Return the brightness of the light."""
-
         return self._brightness
+
+    @property
+    def device_state_attributes(self):
+        """Show Device Attributes."""
+        return self.attributes
 
     @property
     def is_on(self):
@@ -107,40 +122,58 @@ class DALILight(Light):
         from dali.gear.general import DAPC
  
         with self.driver_lock:
-            self._brightness = kwargs.get(ATTR_BRIGHTNESS, 255)
-            cmd = DAPC(self.addr, to_dali_level(self._brightness))
-            r = self.driver.send(cmd)
-            self._state = True
+            try:
+                self._brightness = kwargs.get(ATTR_BRIGHTNESS, 254)
+                _LOGGER.debug("turn on {}".format(self._brightness))
+                cmd = DAPC(self.addr, 254 if self._brightness==255 else self._brightness)
+                r = self.driver.send(cmd)
+                if self._brightness > 0:
+                    self._state = True
+            except usb.core.USBError as e:
+                _LOGGER.error("Can't turn_on {}: {}".format(self._name, e))
+        self.schedule_update_ha_state()
 
     def turn_off(self, **kwargs):
         """Instruct the light to turn off."""
         from dali.gear.general import Off 
 
         with self.driver_lock:
-            cmd = Off(self.addr)
-            r = self.driver.send(cmd)
-            self._state = False 
+            try:
+                cmd = Off(self.addr)
+                r = self.driver.send(cmd)
+                self._state = False 
+            except usb.core.USBError as e:
+                _LOGGER.error("Can't turn_on {}: {}".format(self._name, e))
+        self.schedule_update_ha_state()
+
+    @property
+    def should_poll(self):
+        """Doesn't make much sense to poll, commands have acks"""
+        return False 
 
     def update(self):
         """Fetch update state."""
         from dali.gear.general import QueryActualLevel
-        from dali.gear.general import QueryLampPowerOn
-        
-        try:
-            with self.driver_lock:
-                cmd = QueryLampPowerOn(self.addr)
-                r = self.driver.send(cmd)
-                self._state = bool(r.value)
-                _LOGGER.debug("{} is_on ? {}".format(self._id, self._state))
-        except usb.core.USBError as e:
-            _LOGGER.warning(e)
- 
-        if not self._state:
-            return
+        from dali.command import ResponseError, MissingResponse
+        import usb
+
         with self.driver_lock:
-            cmd = QueryActualLevel(self.addr)
-            r = self.driver.send(cmd)
-            self._brightness = to_hass_level(r.value.as_integer)
+            try:
+                r = self.driver.send(QueryActualLevel(self.addr))
+                _LOGGER.debug(r)
+                if r:
+                    self._brightness = r.value.as_integer
+                    if 0 < self._brightness < 255:
+                        self._state = True
+                    else:
+                        self._state = False
+                else:
+                    _LOGGER.error("return value = {}", r)
+            except usb.core.USBError as e:
+                _LOGGER.error("Can't update {}: {}".format(self._name, e))
+            except ResponseError as e:
+                _LOGGER.error("ResponseError QueryActualLevel")
+            except MissingResponse as e:
+                self._brightness = None
         
-        _LOGGER.debug("[{}] brightness = {} ".format(self._name, self._brightness)) 
  
