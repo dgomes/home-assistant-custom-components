@@ -78,7 +78,7 @@ class MotionSensor(MqttBinarySensor):
         super().__init__(name, state_topic, availability_topic, 'motion',
                          qos, force_update, payload_on, payload_off,
                          payload_available, payload_not_available,
-                         value_template)
+                         value_template, unique_id=None, discovery_hash=None)
 
         # Fill the blanks
         self._period = period

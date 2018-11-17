@@ -138,6 +138,8 @@ class HomeGWClimate(ClimateDevice):
         if payload[ATTR_HOMEGW_CHANNEL] != self._channel:
             return
 
+        _LOGGER.debug("%s : %s", self._channel, new_state.state)
+
         self._current_temperature = float(payload[ATTR_HOMEGW_TEMPERATURE])
         self._current_humidity = int(payload[ATTR_HOMEGW_HUMIDITY])
         self._id = int(payload[ATTR_HOMEGW_ID])
@@ -145,6 +147,11 @@ class HomeGWClimate(ClimateDevice):
         self._battery = bool(payload[ATTR_HOMEGW_BATTERY])
 
         self.schedule_update_ha_state()
+
+    @property
+    def force_update(self):
+        """Force update on new state values."""
+        return True
 
     @property
     def supported_features(self):
