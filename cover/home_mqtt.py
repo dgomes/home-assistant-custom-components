@@ -13,10 +13,11 @@ from homeassistant.core import callback
 from homeassistant.components.cover import (
     CoverDevice, PLATFORM_SCHEMA,
     ATTR_POSITION)
-from homeassistant.const import (
+from homeassistant.const import (STATE_OPEN, STATE_CLOSED,
     CONF_COVERS, CONF_DELAY_TIME, CONF_FRIENDLY_NAME)
 from homeassistant.helpers.event import track_utc_time_change
 from homeassistant.components import mqtt
+from homeassistant.helpers.restore_state import async_get_last_state
 import homeassistant.helpers.config_validation as cv
 
 DEPENDENCIE = ['mqtt']
@@ -26,7 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 CONF_RELAY_UP = "relay_up"
 CONF_RELAY_DOWN = "relay_down"
 
-M_DUINO_RELAY = "test/m-duino/relay/{}"
+M_DUINO_RELAY = "devices/m-duino/relay/{}"
 M_DUINO_RELAY_SET = M_DUINO_RELAY + "/set"
 
 COVER_SCHEMA = vol.Schema({
@@ -78,6 +79,12 @@ class HomeMQTTCover(CoverDevice):
         self._timer = None
 
     async def async_added_to_hass(self):
+        """Call when entity about to be added to hass."""
+        state = await async_get_last_state(self.hass, self.entity_id)
+        if state:
+            _LOGGER.debug("last state of %s = %s", self._name, state)
+            self._position = state.attributes.get('current_position', 50)
+            
         @callback
         def update_status(topic, payload, qos):
             if self._timer is not None:
@@ -105,10 +112,9 @@ class HomeMQTTCover(CoverDevice):
                     self._is_closing = False
                     self._position-= int( (elapsed_miliseconds/self._delay_time) * 100 )
             
-            _LOGGER.debug("Position of %s = %s", self._name, self._position)
-            if self._position > 100:
+            if self._position >= 99: #this accounts for timing errors
                 self._position = 100
-            elif self._position <= 0:
+            elif self._position <= 1:
                 self._position = 0
                 self._closed = True
 
@@ -173,8 +179,7 @@ class HomeMQTTCover(CoverDevice):
         return "m-duino-{}-{}-{}".format(self._name, self._relay_up, self._relay_down)
 
     def _operate_cover(self, relay, time):
-        if time:
-            time = int(time)
+        time = int(time)
         if self._is_closing or self._is_opening:
             _LOGGER.error("Can't operate cover %s", self._name)
             return
@@ -207,4 +212,5 @@ class HomeMQTTCover(CoverDevice):
             self._position = 50 
         
         for r in relays:
-            self._operate_cover(r, "false")
+            self.hass.components.mqtt.async_publish(
+                M_DUINO_RELAY_SET.format(r), "false", qos=0, retain=False)
