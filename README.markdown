@@ -70,27 +70,6 @@ weather:
 
 This file provides a decorator class used in the homegw_climate and homegw_weather platforms. It has a dependency in the [filter sensor](https://www.home-assistant.io/components/sensor.filter/) which actually implements the filters.
 
-## Home MQTT (light, switch, cover)
-
-These components make it easy to expose lights, switches and covers controlled by a PLC programmed with [home_mqtt](https://github.com/dgomes/home_mqtt).
-
-### Example configuration
-
-```yaml
-light:
-  - platform: home_mqtt
-    name: Muros frente
-    command_topic: devices/m-duino/relay
-    relay: 9
-    payload_on: 951
-    payload_off: 950
-    optimistic: false
-```
-
-## Motion Binary Sensor
-
-All my motion sensors publish an event through MQTT when something is detected. Since there is no event off, I had to write a special automation for each of the sensors to reset the motion sensor back to "clear". This custom component cleanly addresses that use case, it will automatically set the sensor off after being clear for a given **period**. You can also reset the sensor MQTT state immediately after the event by supplying a **command_topic** (usually the state topic + "/set").
-
 ### Example configuration
 
 ```yaml
