@@ -4,8 +4,6 @@ Some of my custom components for home-assistant (HA). (http://www.home-assistant
 * [Developer](#developer) - Get notifications of HA Pull-Requests
 * [HomeGW Climate](#homegw-climate) - Use an RF433Mhz weather logger as a climate sensor
 * [HomeGW Weather](#homegw-weather) - Use an RF433Mhz weather station
-* [Home MQTT](#home-mqtt-light-switch-cover) - Very custom setup to control a house through a PLC + MQTT
-* [Motion Binary Sensor](#motion-binary-sensor) - Avoid automations, streamline your motion sensor
 * [HTTP Push Camera](#http-push-camera) - Push images to your Home Assistant "camera"
 * [Bluetooth Speaker](#bluetooth-speaker) - Play TTS through your bluetooth speaker connected to HA.
 
