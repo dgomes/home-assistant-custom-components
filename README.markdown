@@ -5,6 +5,7 @@ Some of my custom components for home-assistant (HA). (http://www.home-assistant
 * [HomeGW Climate](#homegw-climate) - Use an RF433Mhz weather logger as a climate sensor
 * [HomeGW Weather](#homegw-weather) - Use an RF433Mhz weather station
 * [Bluetooth Speaker](#bluetooth-speaker) - Play TTS through your bluetooth speaker connected to HA.
+* [Home Cover](#home-cover) - Control your covers with just two relay's
 
 ## Developer
 
@@ -113,4 +114,23 @@ media_player:
   device: 'OEM Speaker' #REQUIRED: this string is what shows up when you discover a new device
   step: 0.05 #OPTIONAL: steps increase/decrease volume
   cache_dir: /tmp/tts #OPTIONAL: only matters if you're not using the default
+```
+
+## Home Cover
+
+This is a **cover** platform on top of 2 relays exposed through MQTT. Each relays is closed for the duration in milliseconds publish to the control topic. **delay_time** indicates the time needed to go from 0% to 100% cover. For more information on this backend see [home_mqtt](https://github.com/dgomes/home_mqtt)
+
+### Example configuration
+
+```yaml
+- platform: home_mqtt
+  covers:
+    living_room:
+      relay_up: 1
+      relay_down: 2
+      delay_time: 17000
+    suite:
+      relay_up: 3
+      relay_down: 4
+      delay_time: 17000
 ```
