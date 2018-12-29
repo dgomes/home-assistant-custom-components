@@ -1,0 +1,1 @@
+/Users/dgomes/Projects/home-assistant/homeassistant/components/sensor/energy.py
