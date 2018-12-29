@@ -15,7 +15,6 @@ from homeassistant.const import (
     CONF_NAME, ATTR_UNIT_OF_MEASUREMENT, ATTR_ENTITY_ID)
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_state_change
-from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -55,14 +54,13 @@ async def async_setup_platform(hass, config, async_add_entities,
                                discovery_info=None):
     """Set up the energy sensor."""
     meter = EnergySensor(hass, config[CONF_SOURCE_SENSOR],
-                  config.get(CONF_TARIFF),
-                  config.get(CONF_NAME),
-                  config[CONF_ROUND_DIGITS])
-    
+                         config.get(CONF_TARIFF),
+                         config.get(CONF_NAME),
+                         config[CONF_ROUND_DIGITS])
+
     async_add_entities([meter])
 
     async def async_reset_meter(service):
-        _LOGGER.debug("%s == %s", service.data.get(ATTR_ENTITY_ID), meter.entity_id)
         if service.data.get(ATTR_ENTITY_ID) == meter.entity_id:
             await meter.async_reset()
 
@@ -71,7 +69,7 @@ async def async_setup_platform(hass, config, async_add_entities,
                                  schema=SERVICE_RESET_SCHEMA)
 
     return True
- 
+
 
 class EnergySensor(RestoreEntity):
     """Representation of an energy sensor."""
@@ -81,21 +79,23 @@ class EnergySensor(RestoreEntity):
         self._hass = hass
         self._sensor_source_id = source_entity
         self._tariff_id = tariff_entity
-        self._source_entity_id = False 
+        self._source_entity_id = False
         self._round_digits = round_digits
         self._state = 0
         self._last_reset = None
-        self._tariffs = {} 
+        self._tariffs = {}
 
         if name:
             self._name = name
         else:
-            self._name = '{} meter'.format(entity_id)
+            src_name = self._hass.states.get(self._tariff_id).name
+            self._name = '{} meter'.format(src_name)
 
         self._unit_of_measurement = "kWh"
         self._unit_of_measurement_scale = None
 
     async def async_reset(self):
+        """Reset meter counters."""
         _LOGGER.debug("Reset energy meter %s", self.name)
         self._state = 0
         self._last_reset = dt_util.utcnow()
@@ -108,7 +108,7 @@ class EnergySensor(RestoreEntity):
         state = await self.async_get_last_state()
         if state:
             self._state = float(state.state)
-        
+
         if self._tariff_id:
             self._current_tariff = self._hass.states.get(self._tariff_id).state
             if self._current_tariff not in self._tariffs:
@@ -130,7 +130,7 @@ class EnergySensor(RestoreEntity):
                     self._source_entity_id = True
                     self._unit_of_measurement_scale = 1
                 elif unit_of_measurement == UNIT_KILOWATTS_HOUR:
-                    self._unit_of_measurement_scale = 0 
+                    self._unit_of_measurement_scale = 0
                 else:
                     _LOGGER.error("Unsupported power/energy unit: %s",
                                   unit_of_measurement)
@@ -159,7 +159,6 @@ class EnergySensor(RestoreEntity):
 
         async_track_state_change(
             self._hass, self._sensor_source_id, async_calc_energy)
-
 
         @callback
         def async_change_tariff(entity, old_state, new_state):
@@ -199,8 +198,8 @@ class EnergySensor(RestoreEntity):
             ATTR_SOURCE_ID: self._sensor_source_id,
             ATTR_LAST_RESET: self._last_reset,
         }
-        for k,v in self._tariffs.items():
-            state_attr[k] = round(v, self._round_digits) 
+        for k, v in self._tariffs.items():
+            state_attr[k] = round(v, self._round_digits)
         return state_attr
 
     @property
