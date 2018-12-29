@@ -1,5 +1,5 @@
 """
-Energy meter with multiple tariff periods.
+Energy meter from sensors providing power information.
 
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.energy/
@@ -20,10 +20,9 @@ from homeassistant.helpers.restore_state import RestoreEntity
 _LOGGER = logging.getLogger(__name__)
 
 ATTR_SOURCE_ID = 'source'
-ATTR_PERIODICITY = 'periodicity'  # TODO reset meter periodically
 ATTR_LAST_RESET = 'last reset'
 
-SERVICE_RESET = 'reset'
+SERVICE_RESET = 'energy_reset'
 
 SERVICE_RESET_SCHEMA = vol.Schema({
     vol.Required(ATTR_ENTITY_ID): cv.entity_id,
@@ -31,7 +30,6 @@ SERVICE_RESET_SCHEMA = vol.Schema({
 
 CONF_SOURCE_SENSOR = 'source_sensor'
 CONF_ROUND_DIGITS = 'round'
-CONF_TARIFF = 'tariff'
 
 UNIT_WATTS = "W"
 UNIT_KILOWATTS = "kW"
@@ -45,7 +43,6 @@ DEFAULT_ROUND = 3
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME): cv.string,
     vol.Required(CONF_SOURCE_SENSOR): cv.entity_id,
-    vol.Optional(CONF_TARIFF): cv.entity_id,
     vol.Optional(CONF_ROUND_DIGITS, default=DEFAULT_ROUND): vol.Coerce(int),
 })
 
@@ -54,7 +51,6 @@ async def async_setup_platform(hass, config, async_add_entities,
                                discovery_info=None):
     """Set up the energy sensor."""
     meter = EnergySensor(hass, config[CONF_SOURCE_SENSOR],
-                         config.get(CONF_TARIFF),
                          config.get(CONF_NAME),
                          config[CONF_ROUND_DIGITS])
 
@@ -74,16 +70,14 @@ async def async_setup_platform(hass, config, async_add_entities,
 class EnergySensor(RestoreEntity):
     """Representation of an energy sensor."""
 
-    def __init__(self, hass, source_entity, tariff_entity, name, round_digits):
+    def __init__(self, hass, source_entity, name, round_digits):
         """Initialize the min/max sensor."""
         self._hass = hass
         self._sensor_source_id = source_entity
-        self._tariff_id = tariff_entity
         self._source_entity_id = False
         self._round_digits = round_digits
         self._state = 0
         self._last_reset = None
-        self._tariffs = {}
 
         if name:
             self._name = name
@@ -98,8 +92,6 @@ class EnergySensor(RestoreEntity):
         _LOGGER.debug("Reset energy meter %s", self.name)
         self._state = 0
         self._last_reset = dt_util.utcnow()
-        for k in self._tariffs:
-            self._tariffs[k] = 0
 
     async def async_added_to_hass(self):
         """Handle entity which will be added."""
@@ -107,11 +99,6 @@ class EnergySensor(RestoreEntity):
         state = await self.async_get_last_state()
         if state:
             self._state = float(state.state)
-
-        if self._tariff_id:
-            self._current_tariff = self._hass.states.get(self._tariff_id).state
-            if self._current_tariff not in self._tariffs:
-                self._tariffs[self._current_tariff] = 0
 
         @callback
         def async_calc_energy(entity, old_state, new_state):
@@ -147,8 +134,6 @@ class EnergySensor(RestoreEntity):
                     kwh = float(new_state.state) - float(old_state.state)
 
                 self._state += kwh
-                if self._tariff_id:
-                    self._tariffs[self._current_tariff] += kwh
 
             except ValueError:
                 _LOGGER.warning("Unable to store state. "
@@ -158,17 +143,6 @@ class EnergySensor(RestoreEntity):
 
         async_track_state_change(
             self._hass, self._sensor_source_id, async_calc_energy)
-
-        @callback
-        def async_change_tariff(entity, old_state, new_state):
-            """Handle tariff transitions."""
-            self._current_tariff = new_state.state
-            if self._current_tariff not in self._tariffs:
-                self._tariffs[self._current_tariff] = 0
-
-        if self._tariff_id:
-            async_track_state_change(
-                self._hass, self._tariff_id, async_change_tariff)
 
     @property
     def name(self):
@@ -197,8 +171,6 @@ class EnergySensor(RestoreEntity):
             ATTR_SOURCE_ID: self._sensor_source_id,
             ATTR_LAST_RESET: self._last_reset,
         }
-        for k, v in self._tariffs.items():
-            state_attr[k] = round(v, self._round_digits)
         return state_attr
 
     @property
