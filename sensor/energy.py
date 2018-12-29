@@ -69,7 +69,7 @@ async def async_setup_platform(hass, config, async_add_entities,
                                  schema=SERVICE_RESET_SCHEMA)
 
     return True
-
+ 
 
 class EnergySensor(RestoreEntity):
     """Representation of an energy sensor."""
@@ -88,8 +88,7 @@ class EnergySensor(RestoreEntity):
         if name:
             self._name = name
         else:
-            src_name = self._hass.states.get(self._tariff_id).name
-            self._name = '{} meter'.format(src_name)
+            self._name = '{} meter'.format(source_entity)
 
         self._unit_of_measurement = "kWh"
         self._unit_of_measurement_scale = None
