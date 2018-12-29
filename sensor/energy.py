@@ -1,5 +1,5 @@
 """
-Energy meter from a power sensor.
+Energy meter with multiple tariff periods.
 
 For more details about this platform, please refer to the documentation at
 https://home-assistant.io/components/sensor.energy/
@@ -8,6 +8,7 @@ import logging
 
 import voluptuous as vol
 
+import homeassistant.util.dt as dt_util
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import (DOMAIN, PLATFORM_SCHEMA)
 from homeassistant.const import (
@@ -32,10 +33,12 @@ UNIT_KILOWATTS_HOUR = "kWh"
 UNIT_OF_MEASUREMENT = UNIT_KILOWATTS_HOUR
 ICON = 'mdi:counter'
 
+DEFAULT_ROUND = 3
+
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME): cv.string,
     vol.Required(CONF_SOURCE_SENSOR): cv.entity_id,
-    vol.Optional(CONF_ROUND_DIGITS, default=8): vol.Coerce(int),
+    vol.Optional(CONF_ROUND_DIGITS, default=DEFAULT_ROUND): vol.Coerce(int),
 })
 
 
