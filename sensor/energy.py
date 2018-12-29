@@ -15,14 +15,20 @@ from homeassistant.const import (
     CONF_NAME, ATTR_UNIT_OF_MEASUREMENT, ATTR_ENTITY_ID)
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_state_change
+from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
 
 ATTR_SOURCE_ID = 'source'
 ATTR_PERIODICITY = 'periodicity'  # TODO reset meter periodically
-ATTR_LAST_PERIOD = 'last period'
 ATTR_LAST_RESET = 'last reset'
+
+SERVICE_RESET = 'reset'
+
+SERVICE_RESET_SCHEMA = vol.Schema({
+    vol.Required(ATTR_ENTITY_ID): cv.entity_id,
+})
 
 CONF_SOURCE_SENSOR = 'source_sensor'
 CONF_ROUND_DIGITS = 'round'
@@ -55,10 +61,17 @@ async def async_setup_platform(hass, config, async_add_entities,
     
     async_add_entities([meter])
 
-    def reset_meter(service):
-        if service.data.get('entity_id') == meter.entity_id:
-            meter.reset()
-    hass.services.async_register(DOMAIN, "reset_meter", reset_meter)
+    async def async_reset_meter(service):
+        _LOGGER.debug("%s == %s", service.data.get(ATTR_ENTITY_ID), meter.entity_id)
+        if service.data.get(ATTR_ENTITY_ID) == meter.entity_id:
+            await meter.async_reset()
+
+    hass.services.async_register(DOMAIN, SERVICE_RESET,
+                                 async_reset_meter,
+                                 schema=SERVICE_RESET_SCHEMA)
+
+    return True
+ 
 
 class EnergySensor(RestoreEntity):
     """Representation of an energy sensor."""
@@ -71,7 +84,6 @@ class EnergySensor(RestoreEntity):
         self._source_entity_id = False 
         self._round_digits = round_digits
         self._state = 0
-        self._last_period = 0
         self._last_reset = None
         self._tariffs = {} 
 
@@ -83,8 +95,8 @@ class EnergySensor(RestoreEntity):
         self._unit_of_measurement = "kWh"
         self._unit_of_measurement_scale = None
 
-    def reset(self):
-        self._last_period = self._state
+    async def async_reset(self):
+        _LOGGER.debug("Reset energy meter %s", self.name)
         self._state = 0
         self._last_reset = dt_util.utcnow()
         for k in self._tariffs:
@@ -185,11 +197,10 @@ class EnergySensor(RestoreEntity):
         """Return the state attributes of the sensor."""
         state_attr = {
             ATTR_SOURCE_ID: self._sensor_source_id,
-            ATTR_LAST_PERIOD: self._last_period,
             ATTR_LAST_RESET: self._last_reset,
         }
         for k,v in self._tariffs.items():
-            state_attr[k] = v
+            state_attr[k] = round(v, self._round_digits) 
         return state_attr
 
     @property
