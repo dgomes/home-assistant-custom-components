@@ -79,6 +79,9 @@ async def async_setup(hass, config):
 
         try:
             kwh = float(new_state.state) - float(old_state.state)
+            if kwh < 0:
+                # probably the source has been reinitialized, lets ignore this read 
+                return
             hass.data[DATA_ENERGY_METER].data[current_tariff] += kwh
             hass.helpers.dispatcher.dispatcher_send(UPDATE_TOPIC)
 
