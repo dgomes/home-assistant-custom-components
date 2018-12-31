@@ -15,7 +15,7 @@ from homeassistant.const import (
     CONF_NAME, ATTR_UNIT_OF_MEASUREMENT, ATTR_ENTITY_ID,
     EVENT_HOMEASSISTANT_START)
 from homeassistant.core import callback
-from homeassistant.helpers.event import async_track_state_change
+from homeassistant.helpers.event import (async_track_state_change, async_track_time_change)
 from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -81,6 +81,20 @@ async def async_setup_platform(hass, config, async_add_entities,
 
         async_add_entities([meter])
 
+        @callback
+        def async_start_pause_meter(service):
+            """Process service start_pause meter."""
+            for entity_id in service.data.get(ATTR_ENTITY_ID):
+                if entity_id in hass.data[DATA_KEY]:
+                    hass.async_add_job(hass.data[DATA_KEY][entity_id].async_start_pause_meter())
+
+        @callback
+        def async_reset_meter(service):
+            """Process service reset meter."""
+            for entity_id in service.data.get(ATTR_ENTITY_ID):
+                if entity_id in hass.data[DATA_KEY]:
+                    hass.async_add_job(hass.data[DATA_KEY][entity_id].async_reset_meter())
+        
         hass.services.async_register(DOMAIN, SERVICE_START_PAUSE,
                                      async_start_pause_meter,
                                      schema=SERVICE_METER_SCHEMA)
@@ -88,19 +102,6 @@ async def async_setup_platform(hass, config, async_add_entities,
                                      async_reset_meter,
                                      schema=SERVICE_METER_SCHEMA)
 
-    @callback
-    def async_start_pause_meter(service):
-        """Process service start_pause meter."""
-        for entity_id in service.data.get(ATTR_ENTITY_ID):
-            if entity_id in hass.data[DATA_KEY]:
-                hass.async_add_job(hass.data[DATA_KEY][entity_id].async_start_pause_meter())
-
-    @callback
-    def async_reset_meter(service):
-        """Process service reset meter."""
-        for entity_id in service.data.get(ATTR_ENTITY_ID):
-            if entity_id in hass.data[DATA_KEY]:
-                hass.async_add_job(hass.data[DATA_KEY][entity_id].async_reset_meter())
 
     # Wait until start event is sent to load this component.
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, run_setup)
@@ -125,11 +126,11 @@ class UtilityMeterSensor(RestoreEntity):
         self._period_offset = meter_offset
 
         if meter_type == HOURLY:
-            async_track_utc_time_change(hass, async_reset_meter, minute=meter_offset)
+            async_track_time_change(hass, self.async_reset_meter, second=meter_offset)
         if meter_type == DAILY:
-            async_track_utc_time_change(hass, async_reset_meter, hour=meter_offset)
+            async_track_time_change(hass, self.async_reset_meter, hour=meter_offset)
         elif meter_type == [WEEKLY, MONTHLY, YEARLY]:
-            async_track_utc_time_change(hass, lambda: async_reset_meter(False), hour=0)
+            async_track_time_change(hass, lambda: self.async_reset_meter(False), hour=0)
 
     @callback
     def async_reading(self, entity, old_state, new_state):
