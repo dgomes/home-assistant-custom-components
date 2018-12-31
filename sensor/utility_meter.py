@@ -126,7 +126,7 @@ class UtilityMeterSensor(RestoreEntity):
         self._period_offset = meter_offset
 
         if meter_type == HOURLY:
-            async_track_time_change(hass, self.async_reset_meter, second=meter_offset)
+            async_track_time_change(hass, self.async_reset_meter, minute=meter_offset)
         if meter_type == DAILY:
             async_track_time_change(hass, self.async_reset_meter, hour=meter_offset)
         elif meter_type == [WEEKLY, MONTHLY, YEARLY]:
