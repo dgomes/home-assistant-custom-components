@@ -67,7 +67,7 @@ async def async_setup_platform(hass, config, async_add_entities,
     if DATA_KEY not in hass.data:
         hass.data[DATA_KEY] = {}
 
-    def run_setup():
+    def run_setup(event):
         """Delay the setup until Home Assistant is fully initialized.
 
         This allows any entities to be created already
