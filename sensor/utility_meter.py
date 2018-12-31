@@ -159,9 +159,9 @@ class UtilityMeterSensor(RestoreEntity):
         else:
             self._collecting()
             self._collecting = None
-        _LOGGER.debug("%s energy meter %s",
+        _LOGGER.debug("%s - %s - source <%s>", self._name,
                       COLLECTING if self._collecting is not None
-                      else PAUSED, self.name)
+                      else PAUSED, self._sensor_source_id)
         self._hass.async_add_job(self.async_update_ha_state, True)
 
     async def async_reset_meter(self, force=True):
@@ -183,12 +183,16 @@ class UtilityMeterSensor(RestoreEntity):
 
     async def async_added_to_hass(self):
         """Handle entity which will be added."""
+        await super().async_added_to_hass()
+
         state = await self.async_get_last_state()
+        print(state)
         if state:
             self._state = float(state.state)
-            self._unit_of_measurement = state.unit_of_measurement
-            self._last_period = state.state_attr[ATTR_LAST_PERIOD]
-            self._last_reset = state.state_attr[ATTR_LAST_RESET]
+            self._unit_of_measurement = state.attributes[ATTR_UNIT_OF_MEASUREMENT]
+            self._last_period = state.attributes[ATTR_LAST_PERIOD]
+            self._last_reset = state.attributes[ATTR_LAST_RESET]
+            self._hass.async_add_job(self.async_update_ha_state, True)
         await self.async_start_pause_meter()
 
         self._hass.data[DATA_KEY][self.entity_id] = self
