@@ -81,7 +81,7 @@ class EnergyTariff(Entity):
     @property
     def state(self):
         """Return the state of the sun."""
-        return STATE_VAZIO_NORMAL
+        return self._state 
 
     @property
     def device_state_attributes(self):
@@ -100,6 +100,7 @@ class EnergyTariff(Entity):
 
     def bi_horario_semanal(self, time):
         if 0 <= time.weekday() < 5:
+            _LOGGER.debug("Seg. a Sexta")
             if 0 <= time.hour < 8:
                 return STATE_VAZIO_NORMAL
         if time.weekday() == 5: 
@@ -125,6 +126,7 @@ class EnergyTariff(Entity):
                     return STATE_VAZIO_NORMAL
         if time.weekday() == 6:
             return STATE_VAZIO_NORMAL
+        _LOGGER.debug("Fora de Vazio")
         return STATE_CHEIAS
 
     def tri_horario(self, time):
