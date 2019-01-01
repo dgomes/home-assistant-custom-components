@@ -149,8 +149,8 @@ class UtilityMeterSensor(RestoreEntity):
             diff = float(new_state.state) - float(old_state.state)
             self._state += diff
 
-        except ValueError as e:
-            _LOGGER.warning("While processing state changes: %s", e)
+        except ValueError as err:
+            _LOGGER.warning("While processing state changes: %s", err)
 
         self._hass.async_add_job(self.async_update_ha_state, True)
 
@@ -202,7 +202,7 @@ class UtilityMeterSensor(RestoreEntity):
             self._hass.async_add_job(self.async_update_ha_state, True)
             if state.attributes.get(ATTR_STATUS) == PAUSED:
                 self._collecting = lambda: None
-        
+
         await self.async_start_pause_meter()
 
         self._hass.data[DATA_KEY][self.entity_id] = self
