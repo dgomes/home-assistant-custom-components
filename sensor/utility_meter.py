@@ -148,7 +148,6 @@ class UtilityMeterSensor(RestoreEntity):
 
         try:
             diff = Decimal(new_state.state) - Decimal(old_state.state)
-            _LOGGER.debug("%s = %s - %s", diff, Decimal(new_state.state), Decimal(old_state.state))
 
             if diff < 0:
                 # Source sensor just rolled over for unknow reasons,
