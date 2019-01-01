@@ -55,7 +55,7 @@ async def async_setup(hass, config):
     energy_tariff = EnergyTariff(hass, conf[CONF_NAME], conf[CONF_TARIFF_PERIOD]) 
    
     # update every 15min
-    async_track_utc_time_change(hass, energy_tariff.timer_update, minute=range(0,60,15))
+    async_track_utc_time_change(hass, energy_tariff.timer_update, minute=range(0,60,15), second=0)
     await component.async_add_entities([energy_tariff])
     return True
 
