@@ -147,6 +147,9 @@ class UtilityMeterSensor(RestoreEntity):
 
         try:
             diff = float(new_state.state) - float(old_state.state)
+            if diff < 0:
+                # Source sensor just rolled over for unknow reasons,
+                return
             self._state += diff
 
         except ValueError as err:
