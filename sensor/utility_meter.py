@@ -194,10 +194,10 @@ class UtilityMeterSensor(RestoreEntity):
         state = await self.async_get_last_state()
         if state:
             self._state = float(state.state)
-            self._unit_of_measurement = state.attributes[
-                ATTR_UNIT_OF_MEASUREMENT]
-            self._last_period = state.attributes[ATTR_LAST_PERIOD]
-            self._last_reset = state.attributes[ATTR_LAST_RESET]
+            self._unit_of_measurement = state.attributes.get(
+                ATTR_UNIT_OF_MEASUREMENT)
+            self._last_period = state.attributes.get(ATTR_LAST_PERIOD)
+            self._last_reset = state.attributes.get(ATTR_LAST_RESET)
             self._hass.async_add_job(self.async_update_ha_state, True)
         await self.async_start_pause_meter()
 
