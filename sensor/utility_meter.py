@@ -15,7 +15,8 @@ from homeassistant.const import (
     CONF_NAME, ATTR_UNIT_OF_MEASUREMENT, ATTR_ENTITY_ID,
     EVENT_HOMEASSISTANT_START)
 from homeassistant.core import callback
-from homeassistant.helpers.event import (async_track_state_change, async_track_time_change)
+from homeassistant.helpers.event import (
+    async_track_state_change, async_track_time_change)
 from homeassistant.helpers.restore_state import RestoreEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -68,11 +69,7 @@ async def async_setup_platform(hass, config, async_add_entities,
         hass.data[DATA_KEY] = {}
 
     def run_setup(event):
-        """Delay the setup until Home Assistant is fully initialized.
-
-        This allows any entities to be created already
-        """
-
+        """Delay the setup until Home Assistant is fully initialized."""
         meter = UtilityMeterSensor(hass,
                                    config[CONF_SOURCE_SENSOR],
                                    config.get(CONF_NAME),
@@ -84,17 +81,19 @@ async def async_setup_platform(hass, config, async_add_entities,
         @callback
         def async_start_pause_meter(service):
             """Process service start_pause meter."""
-            for entity_id in service.data.get(ATTR_ENTITY_ID):
-                if entity_id in hass.data[DATA_KEY]:
-                    hass.async_add_job(hass.data[DATA_KEY][entity_id].async_start_pause_meter())
+            for entity in service.data.get(ATTR_ENTITY_ID):
+                if entity in hass.data[DATA_KEY]:
+                    hass.async_add_job(
+                        hass.data[DATA_KEY][entity].async_start_pause_meter())
 
         @callback
         def async_reset_meter(service):
             """Process service reset meter."""
-            for entity_id in service.data.get(ATTR_ENTITY_ID):
-                if entity_id in hass.data[DATA_KEY]:
-                    hass.async_add_job(hass.data[DATA_KEY][entity_id].async_reset_meter())
-        
+            for entity in service.data.get(ATTR_ENTITY_ID):
+                if entity in hass.data[DATA_KEY]:
+                    hass.async_add_job(
+                        hass.data[DATA_KEY][entity].async_reset_meter())
+
         hass.services.async_register(DOMAIN, SERVICE_START_PAUSE,
                                      async_start_pause_meter,
                                      schema=SERVICE_METER_SCHEMA)
@@ -102,9 +101,9 @@ async def async_setup_platform(hass, config, async_add_entities,
                                      async_reset_meter,
                                      schema=SERVICE_METER_SCHEMA)
 
-
     # Wait until start event is sent to load this component.
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, run_setup)
+
 
 class UtilityMeterSensor(RestoreEntity):
     """Representation of an utility meter sensor."""
@@ -126,11 +125,15 @@ class UtilityMeterSensor(RestoreEntity):
         self._period_offset = meter_offset
 
         if meter_type == HOURLY:
-            async_track_time_change(hass, self.async_reset_meter, minute=meter_offset)
+            async_track_time_change(hass, self.async_reset_meter,
+                                    minute=meter_offset, second=0)
         if meter_type == DAILY:
-            async_track_time_change(hass, self.async_reset_meter, hour=meter_offset)
+            async_track_time_change(hass, self.async_reset_meter,
+                                    hour=meter_offset, minute=0, second=0)
         elif meter_type == [WEEKLY, MONTHLY, YEARLY]:
-            async_track_time_change(hass, lambda: self.async_reset_meter(False), hour=0)
+            async_track_time_change(hass,
+                                    lambda: self.async_reset_meter(False),
+                                    hour=0, minute=0, second=0)
 
     @callback
     def async_reading(self, entity, old_state, new_state):
@@ -171,9 +174,11 @@ class UtilityMeterSensor(RestoreEntity):
         if not force:
             if self._period == WEEKLY and now.weekday() != self._period_offset:
                 return
-            if self._period == MONTHLY and now.day() != (1 + self._period_offset):
+            if self._period == MONTHLY and\
+                    now.day() != (1 + self._period_offset):
                 return
-            if self._period == YEARLY and now.month() != (1 + self._period_offset):
+            if self._period == YEARLY and\
+                    now.month() != (1 + self._period_offset):
                 return
 
         _LOGGER.debug("Reset utility meter <%s>", self.entity_id)
@@ -189,7 +194,8 @@ class UtilityMeterSensor(RestoreEntity):
         state = await self.async_get_last_state()
         if state:
             self._state = float(state.state)
-            self._unit_of_measurement = state.attributes[ATTR_UNIT_OF_MEASUREMENT]
+            self._unit_of_measurement = state.attributes[
+                ATTR_UNIT_OF_MEASUREMENT]
             self._last_period = state.attributes[ATTR_LAST_PERIOD]
             self._last_reset = state.attributes[ATTR_LAST_RESET]
             self._hass.async_add_job(self.async_update_ha_state, True)
