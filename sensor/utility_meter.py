@@ -122,7 +122,7 @@ class UtilityMeterSensor(RestoreEntity):
         self._last_period = 0
         self._last_reset = dt_util.now()
         # _collecting initializes in inverted logic
-        self._collecting = lambda: None if paused else None
+        self._collecting = None if not paused else lambda: None
         if name:
             self._name = name
         else:
@@ -182,7 +182,7 @@ class UtilityMeterSensor(RestoreEntity):
         self._hass.async_add_job(self.async_update_ha_state, True)
 
     async def _async_reset_meter(self, event):
-        """Helper function for larger then daily cycles."""
+        """Determine cycle - Helper function for larger then daily cycles."""
         now = dt_util.now()
         if self._period == WEEKLY and now.weekday() != self._period_offset:
             return
@@ -190,7 +190,8 @@ class UtilityMeterSensor(RestoreEntity):
                 now.day != (1 + self._period_offset):
             return
         if self._period == YEARLY and\
-                now.month != (1 + self._period_offset):
+                now.month != (1 + self._period_offset) and\
+                now.day != 1:
             return
         await self.async_reset_meter(event)
 
