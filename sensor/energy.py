@@ -6,13 +6,13 @@ https://home-assistant.io/components/sensor.energy/
 """
 import logging
 
+from decimal import Decimal
 import voluptuous as vol
 
-import homeassistant.util.dt as dt_util
 import homeassistant.helpers.config_validation as cv
-from homeassistant.components.sensor import (DOMAIN, PLATFORM_SCHEMA)
+from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import (
-    CONF_NAME, ATTR_UNIT_OF_MEASUREMENT, ATTR_ENTITY_ID)
+    CONF_NAME, ATTR_UNIT_OF_MEASUREMENT, STATE_UNKNOWN, STATE_UNAVAILABLE)
 from homeassistant.core import callback
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import RestoreEntity
@@ -20,15 +20,8 @@ from homeassistant.helpers.restore_state import RestoreEntity
 _LOGGER = logging.getLogger(__name__)
 
 ATTR_SOURCE_ID = 'source'
-ATTR_LAST_RESET = 'last reset'
 
-SERVICE_RESET = 'energy_reset'
-
-SERVICE_RESET_SCHEMA = vol.Schema({
-    vol.Required(ATTR_ENTITY_ID): cv.entity_id,
-})
-
-CONF_SOURCE_SENSOR = 'source_sensor'
+CONF_SOURCE_SENSOR = 'source'
 CONF_ROUND_DIGITS = 'round'
 
 UNIT_WATTS = "W"
@@ -56,93 +49,80 @@ async def async_setup_platform(hass, config, async_add_entities,
 
     async_add_entities([meter])
 
-    async def async_reset_meter(service):
-        if service.data.get(ATTR_ENTITY_ID) == meter.entity_id:
-            await meter.async_reset()
-
-    hass.services.async_register(DOMAIN, SERVICE_RESET,
-                                 async_reset_meter,
-                                 schema=SERVICE_RESET_SCHEMA)
-
     return True
- 
+
 
 class EnergySensor(RestoreEntity):
     """Representation of an energy sensor."""
 
     def __init__(self, hass, source_entity, name, round_digits):
-        """Initialize the min/max sensor."""
+        """Initialize the energy sensor."""
         self._hass = hass
         self._sensor_source_id = source_entity
-        self._source_entity_id = False
         self._round_digits = round_digits
         self._state = 0
-        self._last_reset = None
 
-        if name:
-            self._name = name
-        else:
-            self._name = '{} meter'.format(source_entity)
+        self._name = name if name is not None\
+            else '{} meter'.format(source_entity)
 
-        self._unit_of_measurement = "kWh"
+        self._unit_of_measurement = UNIT_KILOWATTS_HOUR
         self._unit_of_measurement_scale = None
-
-    async def async_reset(self):
-        """Reset meter counters."""
-        _LOGGER.debug("Reset energy meter %s", self.name)
-        self._state = 0
-        self._last_reset = dt_util.utcnow()
 
     async def async_added_to_hass(self):
         """Handle entity which will be added."""
         await super().async_added_to_hass()
         state = await self.async_get_last_state()
         if state:
-            self._state = float(state.state)
+            try:
+                self._state = Decimal(state.state)
+            except ValueError as err:
+                _LOGGER.warning("Could not restore last state: %s", err)
 
         @callback
         def async_calc_energy(entity, old_state, new_state):
             """Handle the sensor state changes."""
-            if old_state is None:
+            if old_state is None or new_state.state in [STATE_UNKNOWN,
+                                                        STATE_UNAVAILABLE]:
                 return
 
             if self._unit_of_measurement_scale is None:
                 unit_of_measurement = new_state.attributes.get(
                     ATTR_UNIT_OF_MEASUREMENT)
                 if unit_of_measurement == UNIT_WATTS:
-                    self._source_entity_id = True
                     self._unit_of_measurement_scale = 1000
                 elif unit_of_measurement == UNIT_KILOWATTS:
-                    self._source_entity_id = True
                     self._unit_of_measurement_scale = 1
-                elif unit_of_measurement == UNIT_KILOWATTS_HOUR:
-                    self._unit_of_measurement_scale = 0
                 else:
-                    _LOGGER.error("Unsupported power/energy unit: %s",
+                    _LOGGER.error("Unsupported power unit: %s",
                                   unit_of_measurement)
                     return
 
             try:
-                if self._source_entity_id:
-                    # energy as the Riemann integral of previous measures.
-                    elapsed_time = (new_state.last_updated
-                                    - old_state.last_updated).total_seconds()
-                    area = (float(new_state.state)
-                            + float(old_state.state))*elapsed_time/2
-                    kwh = area / (self._unit_of_measurement_scale * 3600)
-                else:
-                    kwh = float(new_state.state) - float(old_state.state)
+                # energy as the Riemann integral of previous measures.
+                elapsed_time = (new_state.last_updated
+                                - old_state.last_updated).total_seconds()
+                area = (Decimal(new_state.state)
+                        + Decimal(old_state.state))*Decimal(elapsed_time)/2
+                kwh = area / (self._unit_of_measurement_scale * 3600)
 
                 self._state += kwh
-
-            except ValueError:
-                _LOGGER.warning("Unable to store state. "
-                                "Only numerical states are supported")
+            except ValueError as err:
+                _LOGGER.warning("While calculating energy: %s", err)
 
             self._hass.async_add_job(self.async_update_ha_state, True)
 
         async_track_state_change(
             self._hass, self._sensor_source_id, async_calc_energy)
+
+        @callback
+        def async_set_state(entity, old_state, new_state):
+            """Handle set state from dev-state."""
+            try:
+                self._state = Decimal(new_state.state)
+            except ValueError:
+                _LOGGER.error("State must be a number")
+
+        async_track_state_change(self._hass, self.entity_id, async_set_state)
 
     @property
     def name(self):
@@ -169,11 +149,10 @@ class EnergySensor(RestoreEntity):
         """Return the state attributes of the sensor."""
         state_attr = {
             ATTR_SOURCE_ID: self._sensor_source_id,
-            ATTR_LAST_RESET: self._last_reset,
         }
         return state_attr
 
     @property
     def icon(self):
-        """Return the icon to use in the frontend, if any."""
+        """Return the icon to use in the frontend."""
         return ICON
