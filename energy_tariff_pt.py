@@ -5,7 +5,7 @@ For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/energy_
 """
 import logging
-from datetime import timedelta
+from datetime import (timedelta, datetime, time)
 
 import voluptuous as vol
 
@@ -98,33 +98,33 @@ class EnergyTariff(Entity):
             return STATE_VAZIO_NORMAL
         return STATE_CHEIAS
 
-    def bi_horario_semanal(self, time):
-        if 0 <= time.weekday() < 5:
+    def bi_horario_semanal(self, t):
+        if 0 <= t.weekday() < 5:
             _LOGGER.debug("Seg. a Sexta")
             if 0 <= time.hour < 8:
                 return STATE_VAZIO_NORMAL
-        if time.weekday() == 5: 
+        if t.weekday() == 5: 
             # Hora legal de Verão começa no 1º Domingo de Março e acaba no ultimo de Outubro
             # https://docs.python.org/3.3/library/datetime.html
-            d = datetime(dt.year, 4, 1)  
+            d = datetime(t.year, 4, 1)  
             i_verao = d - timedelta(days=d.weekday() + 1)
-            d = datetime(dt.year, 11, 1)
+            d = datetime(t.year, 11, 1)
             f_verao = d - timedelta(days=d.weekday() + 1)
-            if i_verao <= time.replace(tzinfo=None) < f_verao:
-                if 0 <= time.hour < 9:
+            if i_verao <= t.replace(tzinfo=None) < f_verao:
+                if 0 <= t.hour < 9:
                     return STATE_VAZIO_NORMAL
-                elif 14 <= time.hour < 20:      
+                elif 14 <= t.hour < 20:      
                     return STATE_VAZIO_NORMAL
-                elif 22 <= time.hour < 24:      
+                elif 22 <= t.hour < 24:      
                     return STATE_VAZIO_NORMAL
             else:
-                if datetime.time(0,00) <= time.time() < datetime.time(9,30):
+                if time(0,00) <= t.time() < time(9,30):
                     return STATE_VAZIO_NORMAL
-                elif datetime.time(13,00) <= time.time() < datetime.time(18,30):
+                elif time(13,00) <= t.time() < time(18,30):
                     return STATE_VAZIO_NORMAL
-                elif 22 <= time.hour < 24:      
+                elif 22 <= t.hour < 24:      
                     return STATE_VAZIO_NORMAL
-        if time.weekday() == 6:
+        if t.weekday() == 6:
             return STATE_VAZIO_NORMAL
         _LOGGER.debug("Fora de Vazio")
         return STATE_CHEIAS
