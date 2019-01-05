@@ -15,9 +15,7 @@ import voluptuous as vol
 
 import homeassistant.helpers.config_validation as cv
 from homeassistant.core import callback
-from homeassistant.const import (
-    ATTR_ENTITY_ID, ATTR_UNIT_OF_MEASUREMENT, CONF_ICON, CONF_NAME, CONF_MODE,
-    STATE_UNAVAILABLE)
+from homeassistant.const import STATE_UNAVAILABLE
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers import event
@@ -32,6 +30,8 @@ ENTITY_ID_FORMAT = DOMAIN + '.{}'
 
 HOMEASSITANT_ORGANIZATION = 'home-assistant'
 HOMEASSITANT_REPO = 'home-assistant'
+
+MAX_PR_NOTIFICATIONS = 5
 
 ATTR_LAST_UPDATED = 'last_updated'
 
@@ -70,6 +70,11 @@ class HADeveloperEntity(RestoreEntity):
         return False
 
     @property
+    def icon(self):
+        """Return the icon to be used for this entity."""
+        return "mdi:github-circle" 
+
+    @property
     def name(self):
         """Return the name of the repository."""
         return FRIENDLY_NAME 
@@ -86,7 +91,6 @@ class HADeveloperEntity(RestoreEntity):
         from github.GithubException import RateLimitExceededException
         _LOGGER.debug("check_new_pullrequests")
 
-        print(self.github_personal_token)
         github_client = Github(self.github_personal_token)
         try:
             organization = github_client.get_organization(HOMEASSITANT_ORGANIZATION)
@@ -105,6 +109,8 @@ class HADeveloperEntity(RestoreEntity):
         pr_list = []
         for pull_request in repository.get_pulls():
             found = False
+            if len(pr_list) > MAX_PR_NOTIFICATIONS:
+                break
             _LOGGER.debug(pull_request.number)
             pr_list.append(pull_request.number)
             if last_signaled_pr != STATE_UNAVAILABLE and\
@@ -132,6 +138,7 @@ class HADeveloperEntity(RestoreEntity):
 
         _LOGGER.debug("Set %s to %s", self.name, max(pr_list))
         self._state = max(pr_list)
+        self.hass.async_add_job(self.async_update_ha_state)
 
     async def async_added_to_hass(self):
         """Run when entity about to be added to hass."""
