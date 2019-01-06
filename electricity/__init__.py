@@ -27,6 +27,7 @@ CONF_COUNTRY = 'country'
 CONF_OPERATOR = 'operator'
 CONF_PLAN = 'plan'
 CONF_SOURCE_SENSOR = 'source'
+CONF_DISABLE_METERS = 'disable_meters'
 
 DOMAIN = 'electricity'
 
@@ -68,6 +69,7 @@ CONFIG_SCHEMA = vol.Schema({
             vol.Required(CONF_OPERATOR): cv.string,
             vol.Required(CONF_PLAN): cv.string,
             vol.Required(CONF_SOURCE_SENSOR): cv.entity_id,
+            vol.Optional(CONF_DISABLE_METERS, default=False): cv.boolean,
         }) #, _cv_supported_operator)
     })
 }, extra=vol.ALLOW_EXTRA)
@@ -97,7 +99,10 @@ class EletricityEntity(Entity):
         self.operator = config[CONF_OPERATOR]
         self.plan = config[CONF_PLAN]
         self.source_sensor = config[CONF_SOURCE_SENSOR]
-        self.utility_meters = []
+        if config[CONF_DISABLE_METERS]:
+            self.utility_meters = None
+        else:
+            self.utility_meters = []
 
     async def async_added_to_hass(self):
         """Setup all required entities and automations."""
@@ -112,31 +117,37 @@ class EletricityEntity(Entity):
             meter_type = "yearly"
         self._state = self.my_plan.current_tariff(dt_util.now())
 
-        for tariff in self.my_plan.tariffs():
-            _LOGGER.debug("Create utility_meter %s", tariff)
-            config = {
-                      'name': UTILITY_METER_NAME_FORMAT.format(self.name, tariff),
-                      'source': self.source_sensor,
-                      'meter_type': meter_type,
-                      'paused': self._state != tariff,
-                     }
-            _LOGGER.debug(config)
-            self.hass.async_create_task(discovery.async_load_platform(self.hass, "sensor", "utility_meter", config, self.config))
+        if self.utility_meters is not None:
+            for tariff in self.my_plan.tariffs():
+                _LOGGER.debug("Create utility_meter %s", tariff)
+                config = {
+                          'name': UTILITY_METER_NAME_FORMAT.format(self.name, tariff),
+                          'source': self.source_sensor,
+                          'meter_type': meter_type,
+                          'paused': self._state != tariff,
+                         }
+                _LOGGER.debug(config)
+                self.hass.async_create_task(discovery.async_load_platform(self.hass, "sensor", "utility_meter", config, self.config))
+                
         async_track_utc_time_change(self.hass, self.timer_update, second=range(0,60,15))
 
     @callback
     def timer_update(self, now):
         new_state = self.my_plan.current_tariff(now)
      
-        if self.utility_meters == [] or len(self.utility_meters) != len(self.my_plan.tariffs()):
+        if self.utility_meters is not None and (
+                self.utility_meters == [] or 
+                len(self.utility_meters) != len(self.my_plan.tariffs())
+                ):
             states = self.hass.states.async_all()
             self.utility_meters = [s.entity_id for s in states for t in self.my_plan.tariffs() if s.name == UTILITY_METER_NAME_FORMAT.format(self.name, t)]
 
         if new_state != self._state:
             self._state = new_state
-            service_data = {ATTR_ENTITY_ID: self.utility_meters}
 
-            self.hass.async_create_task(self.hass.services.async_call("sensor", "utility_meter_start_pause", service_data))
+            if self.utility_meters is not None:
+                service_data = {ATTR_ENTITY_ID: self.utility_meters}
+                self.hass.async_create_task(self.hass.services.async_call("sensor", "utility_meter_start_pause", service_data))
 
     @property
     def should_poll(self):
