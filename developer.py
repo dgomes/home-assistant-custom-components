@@ -147,7 +147,7 @@ class HADeveloperEntity(RestoreEntity):
         if state:
             self._state = state.state
 
-        _dt = dt_util.utcnow() + timedelta(seconds=10)
+        _dt = dt_util.utcnow() + timedelta(minutes=10)
         event.async_track_utc_time_change(
             self.hass, self.check_new_pullrequests,
             hour=_dt.hour, minute=_dt.minute, second=_dt.second)
