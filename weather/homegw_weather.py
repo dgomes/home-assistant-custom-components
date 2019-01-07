@@ -73,7 +73,8 @@ class HomeGWWeather(WeatherEntity, RestoreEntity):
     @asyncio.coroutine
     def async_added_to_hass(self):
         """Run when entity about to be added."""
-        old_state = yield from self.async_get_last_state()
+        await super().async_added_to_hass()
+        old_state = await self.async_get_last_state()
         if old_state is not None:
             if old_state.attributes.get(ATTR_HOMEGW_TEMPERATURE):
                 self._temperature = float(
