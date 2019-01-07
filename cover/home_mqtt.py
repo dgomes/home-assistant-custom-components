@@ -17,7 +17,7 @@ from homeassistant.const import (STATE_OPEN, STATE_CLOSED,
     CONF_COVERS, CONF_DELAY_TIME, CONF_FRIENDLY_NAME)
 from homeassistant.helpers.event import track_utc_time_change
 from homeassistant.components import mqtt
-from homeassistant.helpers.restore_state import async_get_last_state
+from homeassistant.helpers.restore_state import RestoreEntity 
 import homeassistant.helpers.config_validation as cv
 
 DEPENDENCIE = ['mqtt']
@@ -62,7 +62,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async_add_entities(covers)
 
 
-class HomeMQTTCover(CoverDevice):
+class HomeMQTTCover(CoverDevice, RestoreEntity):
     """Representation of a demo cover."""
 
     def __init__(self, hass, name, relay_up, relay_down, delay_time):
@@ -80,7 +80,7 @@ class HomeMQTTCover(CoverDevice):
 
     async def async_added_to_hass(self):
         """Call when entity about to be added to hass."""
-        state = await async_get_last_state(self.hass, self.entity_id)
+        state = await self.async_get_last_state()
         if state:
             _LOGGER.debug("last state of %s = %s", self._name, state)
             self._position = state.attributes.get('current_position', 50)
@@ -111,7 +111,8 @@ class HomeMQTTCover(CoverDevice):
                 else:
                     self._is_closing = False
                     self._position-= int( (elapsed_miliseconds/self._delay_time) * 100 )
-            
+           
+            self._closed = False
             if self._position >= 99: #this accounts for timing errors
                 self._position = 100
             elif self._position <= 1:
@@ -210,6 +211,7 @@ class HomeMQTTCover(CoverDevice):
             relays = [self._relay_down, self._relay_up]
         else:
             self._position = 50 
+            self.async_schedule_update_ha_state(True)
         
         for r in relays:
             self.hass.components.mqtt.async_publish(
