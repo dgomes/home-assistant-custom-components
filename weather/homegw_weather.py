@@ -17,7 +17,7 @@ from homeassistant.components.weather import (
     PLATFORM_SCHEMA)
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.event import async_track_state_change
-from homeassistant.helpers.restore_state import async_get_last_state
+from homeassistant.helpers.restore_state import RestoreEntity 
 import os
 import sys
 sys.path.append(os.sep.join(os.path.abspath(__file__).split(os.sep)[:-2]))
@@ -56,7 +56,7 @@ def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     ])
 
 
-class HomeGWWeather(WeatherEntity):
+class HomeGWWeather(WeatherEntity, RestoreEntity):
     """Representation of a weather condition."""
 
     def __init__(self, hass, name, serial_sensor):
@@ -73,7 +73,7 @@ class HomeGWWeather(WeatherEntity):
     @asyncio.coroutine
     def async_added_to_hass(self):
         """Run when entity about to be added."""
-        old_state = yield from async_get_last_state(self.hass, self.entity_id)
+        old_state = yield from self.async_get_last_state()
         if old_state is not None:
             if old_state.attributes.get(ATTR_HOMEGW_TEMPERATURE):
                 self._temperature = float(
