@@ -80,6 +80,7 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
 
     async def async_added_to_hass(self):
         """Call when entity about to be added to hass."""
+        await super().async_added_to_hass()
         state = await self.async_get_last_state()
         if state:
             _LOGGER.debug("last state of %s = %s", self._name, state)
