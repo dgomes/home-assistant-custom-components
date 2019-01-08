@@ -87,7 +87,7 @@ async def async_setup_platform(hass, config, async_add_entities,
         @callback
         def async_start_pause_meter(service):
             """Process service start_pause meter."""
-            for entity in service.data.get(ATTR_ENTITY_ID):
+            for entity in service.data[ATTR_ENTITY_ID]:
                 dispatcher_send(hass, SIGNAL_START_PAUSE_METER, entity)
 
         @callback
@@ -112,7 +112,7 @@ class UtilityMeterSensor(RestoreEntity):
 
     def __init__(self, hass, source_entity, name, meter_type, meter_offset=0,
                  paused=False):
-        """Initialize the min/max sensor."""
+        """Initialize the Utility Meter sensor."""
         self._sensor_source_id = source_entity
         self._state = 0
         self._last_period = 0
@@ -149,7 +149,7 @@ class UtilityMeterSensor(RestoreEntity):
         except ValueError as err:
             _LOGGER.warning("While processing state changes: %s", err)
 
-        self.hass.async_add_job(self.async_update_ha_state)
+        self.async_schedule_update_ha_state()
 
     async def async_start_pause_meter(self, entity_id):
         """Start/Pause meter."""
