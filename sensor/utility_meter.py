@@ -14,7 +14,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import (DOMAIN, PLATFORM_SCHEMA)
 from homeassistant.const import (
     CONF_NAME, ATTR_UNIT_OF_MEASUREMENT, ATTR_ENTITY_ID,
-    EVENT_HOMEASSISTANT_START)
+    EVENT_HOMEASSISTANT_START, STATE_UNKNOWN, STATE_UNAVAILABLE)
 from homeassistant.core import callback
 from homeassistant.helpers.event import (
     async_track_state_change, async_track_time_change)
@@ -130,7 +130,9 @@ class UtilityMeterSensor(RestoreEntity):
     @callback
     def async_reading(self, entity, old_state, new_state):
         """Handle the sensor state changes."""
-        if old_state is None:
+        if any([old_state is None,
+                old_state in [STATE_UNKNOWN, STATE_UNAVAILABLE],
+                new_state in [STATE_UNKNOWN, STATE_UNAVAILABLE]]):
             return
 
         if self._unit_of_measurement is None and\
