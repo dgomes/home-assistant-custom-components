@@ -143,7 +143,9 @@ class EletricityEntity(Entity):
             self.utility_meters = [s.entity_id for s in states for t in self.my_plan.tariffs() if s.name == UTILITY_METER_NAME_FORMAT.format(self.name, t)]
 
         if new_state != self._state:
+            _LOGGER.debug("Changing from %s to %s", self._state, new_state)
             self._state = new_state
+            await self.async_update_ha_state()
 
             if self.utility_meters is not None:
                 service_data = {ATTR_ENTITY_ID: self.utility_meters}
