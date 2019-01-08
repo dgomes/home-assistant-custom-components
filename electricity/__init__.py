@@ -145,7 +145,7 @@ class EletricityEntity(Entity):
         if new_state != self._state:
             _LOGGER.debug("Changing from %s to %s", self._state, new_state)
             self._state = new_state
-            await self.async_update_ha_state()
+            self.schedule_update_ha_state()
 
             if self.utility_meters is not None:
                 service_data = {ATTR_ENTITY_ID: self.utility_meters}
