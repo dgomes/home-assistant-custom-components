@@ -148,7 +148,9 @@ class UtilityMeterSensor(RestoreEntity):
 
         except ValueError as err:
             _LOGGER.warning("While processing state changes: %s", err)
-
+        except DecimalException as err:
+            _LOGGER.warning("Invalid state (%s > %s): %s",
+                            old_state.state, new_state.state, err)
         self.async_schedule_update_ha_state()
 
     async def async_start_pause_meter(self, entity_id):
