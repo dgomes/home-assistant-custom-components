@@ -6,7 +6,7 @@ https://home-assistant.io/components/sensor.utility_meter/
 """
 import logging
 
-from decimal import Decimal
+from decimal import Decimal, DecimalException
 import voluptuous as vol
 
 import homeassistant.util.dt as dt_util
