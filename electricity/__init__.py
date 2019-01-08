@@ -19,7 +19,7 @@ from homeassistant.helpers.event import (
     async_track_point_in_utc_time, async_track_utc_time_change)
 from homeassistant.util import dt as dt_util
 
-REQUIREMENTS = ['python-electricity==0.0.3']
+REQUIREMENTS = ['python-electricity==0.0.4']
 
 _LOGGER =  logging.getLogger(__name__)
 
