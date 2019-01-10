@@ -18,6 +18,8 @@ from homeassistant.components.weather import (
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.event import async_track_state_change
 from homeassistant.helpers.restore_state import RestoreEntity 
+from homeassistant.helpers.sun import is_up
+
 import os
 import sys
 sys.path.append(os.sep.join(os.path.abspath(__file__).split(os.sep)[:-2]))
@@ -61,7 +63,7 @@ class HomeGWWeather(WeatherEntity, RestoreEntity):
     def __init__(self, hass, name, serial_sensor):
         """Initialize the HomeGW weather."""
         self._name = name
-
+        self._hass = hass
         self._temperature = None
         self._humidity = None
         self._pressure = None
@@ -172,4 +174,6 @@ class HomeGWWeather(WeatherEntity, RestoreEntity):
 
         if self._humidity > 80:
             return 'rainy'
-        return 'sunny'
+        if is_up(self._hass):
+            return 'sunny'
+        return 'clear-night' 
