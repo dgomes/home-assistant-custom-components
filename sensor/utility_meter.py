@@ -227,7 +227,15 @@ class UtilityMeterSensor(RestoreEntity):
                 # necessary to assure full restoration
                 self._collecting = None
 
-        await self.async_start_pause_meter(self.entity_id)
+        @callback
+        def async_source_tracking(event):
+            """Wait for source to be ready, then start meter."""
+            self.hass.async_create_task(
+                self.async_start_pause_meter(self.entity_id)
+            )
+
+        self.hass.bus.async_listen_once(
+            EVENT_HOMEASSISTANT_START, async_source_tracking)
 
     @property
     def name(self):
