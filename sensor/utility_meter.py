@@ -175,24 +175,24 @@ class UtilityMeterSensor(RestoreEntity):
     async def async_added_to_hass(self):
         """Handle entity which will be added."""
         await super().async_added_to_hass()
-        
+
         @callback
-        def async_start_pause_meter(service):
+        def async_service_start_pause_meter(service):
             """Process service start_pause meter."""
             for entity in service.data[ATTR_ENTITY_ID]:
                 dispatcher_send(self.hass, SIGNAL_START_PAUSE_METER, entity)
 
         @callback
-        def async_reset_meter(service):
+        def async_service_reset_meter(service):
             """Process service reset meter."""
             for entity in service.data.get(ATTR_ENTITY_ID):
                 dispatcher_send(self.hass, SIGNAL_RESET_METER, entity)
 
         self.hass.services.async_register(DOMAIN, SERVICE_START_PAUSE,
-                                          async_start_pause_meter,
+                                          async_service_start_pause_meter,
                                           schema=SERVICE_METER_SCHEMA)
         self.hass.services.async_register(DOMAIN, SERVICE_RESET,
-                                          async_reset_meter,
+                                          async_service_reset_meter,
                                           schema=SERVICE_METER_SCHEMA)
 
         if self._period == HOURLY:
@@ -230,9 +230,8 @@ class UtilityMeterSensor(RestoreEntity):
         @callback
         def async_source_tracking(event):
             """Wait for source to be ready, then start meter."""
-            self.hass.async_create_task(
-                self.async_start_pause_meter(self.entity_id)
-            )
+            dispatcher_send(self.hass, SIGNAL_START_PAUSE_METER,
+                            self.entity_id)
 
         self.hass.bus.async_listen_once(
             EVENT_HOMEASSISTANT_START, async_source_tracking)
