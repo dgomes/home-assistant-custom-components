@@ -20,7 +20,7 @@ from homeassistant.components import mqtt
 from homeassistant.helpers.restore_state import RestoreEntity 
 import homeassistant.helpers.config_validation as cv
 
-DEPENDENCIE = ['mqtt']
+DEPENDENCIES = ['mqtt']
 
 _LOGGER = logging.getLogger(__name__)
 

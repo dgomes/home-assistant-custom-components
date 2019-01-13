@@ -71,46 +71,21 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 async def async_setup_platform(hass, config, async_add_entities,
                                discovery_info=None):
     """Set up the utility meter sensor."""
-    def run_setup(event):
-        """Delay the setup until Home Assistant is fully initialized."""
-        conf = discovery_info if discovery_info else config
+    conf = discovery_info if discovery_info else config
 
-        meter = UtilityMeterSensor(hass,
-                                   conf[CONF_SOURCE_SENSOR],
-                                   conf.get(CONF_NAME),
-                                   conf.get(CONF_METER_TYPE),
-                                   conf.get(CONF_METER_OFFSET),
-                                   conf.get(CONF_PAUSED))
+    meter = UtilityMeterSensor(conf[CONF_SOURCE_SENSOR],
+                               conf.get(CONF_NAME),
+                               conf.get(CONF_METER_TYPE),
+                               conf.get(CONF_METER_OFFSET),
+                               conf.get(CONF_PAUSED))
 
-        async_add_entities([meter])
-
-        @callback
-        def async_start_pause_meter(service):
-            """Process service start_pause meter."""
-            for entity in service.data[ATTR_ENTITY_ID]:
-                dispatcher_send(hass, SIGNAL_START_PAUSE_METER, entity)
-
-        @callback
-        def async_reset_meter(service):
-            """Process service reset meter."""
-            for entity in service.data.get(ATTR_ENTITY_ID):
-                dispatcher_send(hass, SIGNAL_RESET_METER, entity)
-
-        hass.services.async_register(DOMAIN, SERVICE_START_PAUSE,
-                                     async_start_pause_meter,
-                                     schema=SERVICE_METER_SCHEMA)
-        hass.services.async_register(DOMAIN, SERVICE_RESET,
-                                     async_reset_meter,
-                                     schema=SERVICE_METER_SCHEMA)
-
-    # Wait until start event is sent to load this component.
-    hass.bus.async_listen_once(EVENT_HOMEASSISTANT_START, run_setup)
+    async_add_entities([meter])
 
 
 class UtilityMeterSensor(RestoreEntity):
     """Representation of an utility meter sensor."""
 
-    def __init__(self, hass, source_entity, name, meter_type, meter_offset=0,
+    def __init__(self, source_entity, name, meter_type, meter_offset=0,
                  paused=False):
         """Initialize the Utility Meter sensor."""
         self._sensor_source_id = source_entity
@@ -200,6 +175,25 @@ class UtilityMeterSensor(RestoreEntity):
     async def async_added_to_hass(self):
         """Handle entity which will be added."""
         await super().async_added_to_hass()
+        
+        @callback
+        def async_start_pause_meter(service):
+            """Process service start_pause meter."""
+            for entity in service.data[ATTR_ENTITY_ID]:
+                dispatcher_send(self.hass, SIGNAL_START_PAUSE_METER, entity)
+
+        @callback
+        def async_reset_meter(service):
+            """Process service reset meter."""
+            for entity in service.data.get(ATTR_ENTITY_ID):
+                dispatcher_send(self.hass, SIGNAL_RESET_METER, entity)
+
+        self.hass.services.async_register(DOMAIN, SERVICE_START_PAUSE,
+                                          async_start_pause_meter,
+                                          schema=SERVICE_METER_SCHEMA)
+        self.hass.services.async_register(DOMAIN, SERVICE_RESET,
+                                          async_reset_meter,
+                                          schema=SERVICE_METER_SCHEMA)
 
         if self._period == HOURLY:
             async_track_time_change(self.hass, self._async_reset_meter,
