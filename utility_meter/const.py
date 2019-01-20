@@ -10,7 +10,10 @@ YEARLY = 'yearly'
 METER_TYPES = [HOURLY, DAILY, WEEKLY, MONTHLY, YEARLY]
 
 DATA_UTILITY = 'utility_meter_data'
+
 UTILITY_COMPONENT = 'component'
+
+SENSOR_PLATFORM_UTILITY_METER = 'utility_meter'
 
 CONF_METER = 'meter'
 CONF_SOURCE_SENSOR = 'source'
@@ -21,5 +24,11 @@ CONF_TARIFFS = 'tariffs'
 CONF_TARIFF = 'tariff'
 CONF_TARIFF_ENTITY = 'tariff_entity'
 
+ATTR_TARIFF = 'tariff'
+
 SIGNAL_START_PAUSE_METER = 'utility_meter_start_pause'
 SIGNAL_RESET_METER = 'utility_meter_reset'
+
+SERVICE_RESET = 'reset'
+SERVICE_SELECT_TARIFF = 'select_tariff'
+SERVICE_SELECT_NEXT_TARIFF = 'next_tariff'

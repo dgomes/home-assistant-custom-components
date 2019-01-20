@@ -9,37 +9,32 @@ import logging
 
 import voluptuous as vol
 
-from homeassistant.core import callback
 from homeassistant.const import (ATTR_ENTITY_ID, CONF_NAME)
-from homeassistant.util import slugify
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers import discovery
-from homeassistant.helpers.dispatcher import dispatcher_send
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.restore_state import RestoreEntity
+from homeassistant.components.sensor import DOMAIN as SENSOR_DOMAIN
 from .const import (
-    DOMAIN, SIGNAL_START_PAUSE_METER, SIGNAL_RESET_METER,
-    METER_TYPES, CONF_SOURCE_SENSOR, CONF_METER_TYPE, CONF_METER_OFFSET,
-    CONF_TARIFF_ENTITY, CONF_TARIFF, CONF_TARIFFS, CONF_PAUSED, CONF_METER,
-    DATA_UTILITY, UTILITY_COMPONENT)
+    DOMAIN, SIGNAL_RESET_METER, METER_TYPES, CONF_SOURCE_SENSOR,
+    CONF_METER_TYPE, CONF_METER_OFFSET, CONF_TARIFF_ENTITY, CONF_TARIFF,
+    CONF_TARIFFS, CONF_METER, DATA_UTILITY, UTILITY_COMPONENT,
+    SENSOR_PLATFORM_UTILITY_METER, SERVICE_RESET, SERVICE_SELECT_TARIFF,
+    SERVICE_SELECT_NEXT_TARIFF, ATTR_TARIFF)
 
 _LOGGER = logging.getLogger(__name__)
 
-TARIFF_ICON = "mdi:cash-multiple"
+TARIFF_ICON = "mdi:clock-outline"
 
-ATTR_OPTIONS = 'tariffs'
-
-SERVICE_START_PAUSE = 'start_pause'
-SERVICE_RESET = 'reset'
-SERVICE_SELECT_TARIFF = 'select_tariff'
-SERVICE_SELECT_NEXT_TARIFF = 'next_tariff'
+ATTR_TARIFFS = 'tariffs'
 
 SERVICE_METER_SCHEMA = vol.Schema({
     vol.Required(ATTR_ENTITY_ID): cv.entity_ids,
 })
 
 SERVICE_SELECT_TARIFF_SCHEMA = SERVICE_METER_SCHEMA.extend({
-    vol.Required(CONF_TARIFF): cv.string
+    vol.Required(ATTR_TARIFF): cv.string
 })
 
 METER_CONFIG_SCHEMA = vol.Schema({
@@ -57,6 +52,7 @@ CONFIG_SCHEMA = vol.Schema({
     }),
 }, extra=vol.ALLOW_EXTRA)
 
+
 async def async_setup(hass, config):
     """Set up an Utility Meter."""
     component = EntityComponent(_LOGGER, DOMAIN, hass)
@@ -68,10 +64,10 @@ async def async_setup(hass, config):
         hass.data[DATA_UTILITY][meter] = conf
 
         if conf[CONF_TARIFFS] == []:
-            #TODO melhor nome para este sensor
+            # only one entity is required
             hass.async_create_task(discovery.async_load_platform(
-                hass, "sensor", "utility_meter", 
-                {CONF_METER: meter}, config))
+                hass, SENSOR_DOMAIN, SENSOR_PLATFORM_UTILITY_METER,
+                {CONF_METER: meter, CONF_NAME: meter}, config))
         else:
             # create tariff selection
             await component.async_add_entities([
@@ -80,6 +76,7 @@ async def async_setup(hass, config):
             hass.data[DATA_UTILITY][meter][CONF_TARIFF_ENTITY] =\
                 "{}.{}".format(DOMAIN, meter)
 
+            # add one meter for each tariff
             for tariff in conf[CONF_TARIFFS]:
                 tariff_conf = {
                     CONF_METER: meter,
@@ -87,17 +84,13 @@ async def async_setup(hass, config):
                     CONF_TARIFF: tariff,
                     }
                 hass.async_create_task(discovery.async_load_platform(
-                    hass, "sensor", "utility_meter", tariff_conf, config))
+                    hass, SENSOR_DOMAIN, SENSOR_PLATFORM_UTILITY_METER,
+                    tariff_conf, config))
 
-    @callback
-    def async_service_reset_meter(service):
-        """Process service to reset meter."""
-        for entity in service.data[ATTR_ENTITY_ID]:
-            dispatcher_send(hass, SIGNAL_RESET_METER, entity)
-
-    hass.services.async_register(DOMAIN, SERVICE_RESET,
-                                 async_service_reset_meter,
-                                 schema=SERVICE_METER_SCHEMA)
+    component.async_register_entity_service(
+        SERVICE_RESET, SERVICE_METER_SCHEMA,
+        'async_reset_meters'
+    )
 
     component.async_register_entity_service(
         SERVICE_SELECT_TARIFF, SERVICE_SELECT_TARIFF_SCHEMA,
@@ -111,15 +104,16 @@ async def async_setup(hass, config):
 
     return True
 
+
 class TariffSelect(RestoreEntity):
     """Representation of a Tariff selector."""
 
-    def __init__(self, name, options):
+    def __init__(self, name, tariffs):
         """Initialize a tariff selector."""
         self._name = name
-        self._current_tariff = None 
-        self._tariffs = options
-        self._icon = TARIFF_ICON 
+        self._current_tariff = None
+        self._tariffs = tariffs
+        self._icon = TARIFF_ICON
 
     async def async_added_to_hass(self):
         """Run when entity about to be added."""
@@ -157,16 +151,21 @@ class TariffSelect(RestoreEntity):
     def state_attributes(self):
         """Return the state attributes."""
         return {
-            ATTR_OPTIONS: self._tariffs,
+            ATTR_TARIFFS: self._tariffs,
         }
+
+    async def async_reset_meters(self):
+        """Reset all sensors of this meter."""
+        async_dispatcher_send(self.hass, SIGNAL_RESET_METER,
+                              self.entity_id)
 
     async def async_select_tariff(self, tariff):
         """Select new option."""
         if tariff not in self._tariffs:
             _LOGGER.warning('Invalid tariff: %s (possible tariffs: %s)',
-                            option, ', '.join(self._tariffs))
+                            tariff, ', '.join(self._tariffs))
             return
-        self._current_tariff = tariff 
+        self._current_tariff = tariff
         await self.async_update_ha_state()
 
     async def async_next_tariff(self):
@@ -175,4 +174,3 @@ class TariffSelect(RestoreEntity):
         new_index = (current_index + 1) % len(self._tariffs)
         self._current_tariff = self._tariffs[new_index]
         await self.async_update_ha_state()
-
