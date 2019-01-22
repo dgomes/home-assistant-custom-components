@@ -68,22 +68,6 @@ weather:
 
 This file provides a decorator class used in the homegw_climate and homegw_weather platforms. It has a dependency in the [filter sensor](https://www.home-assistant.io/components/sensor.filter/) which actually implements the filters.
 
-### Example configuration
-
-```yaml
-
-binary_sensor:
-  - platform: motion_mqtt
-    name: test_cozinha
-    state_topic: devices/sonoff_rfbridge/relay/0
-    command_topic: devices/sonoff_rfbridge/relay/0/set
-    availability_topic: devices/sonoff_rfbridge/status
-    payload_available: 1
-    payload_not_available: 0
-    period: 5:00
-
-```
-
 ## Bluetooth Speaker
 
 This is a **media_player** platform that enables playback of _mp3_ and _wav_ files through a Bluetooth Speaker paired with a Linux Host using the [bluealsa](https://github.com/Arkq/bluez-alsa) stack.
