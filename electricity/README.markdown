@@ -1,0 +1,26 @@
+# About
+
+This component provides the current tariff of a given electricity operator 
+
+Although this component can work alone, it makes sense to complement the utility_meter component. Integration between both is achieved through state sincronization using ana automation.
+
+# Configuration example
+
+```yaml
+electricity:
+  home:
+    country: Portugal
+    operator: EDP
+    plan: Bi-horário - ciclo diário
+
+automation:
+  - alias: tariff change
+    trigger:
+      - platform: state
+        entity_id: electricity.operator_plan
+    action:
+      - service: utility_meter.select_tariff
+        entity_id: utility_meter.energy
+		data_template:
+          tariff: "{{ trigger.to_state.state }}" 
+```
