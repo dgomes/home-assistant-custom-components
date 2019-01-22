@@ -1,5 +1,5 @@
 """
-Component to track electricity consumption.
+Component to track electricity tariff
 
 For more details about this component, please refer to the documentation
 at http://github.com/dgomes/home-assistant-custom-components/electricity/
@@ -28,6 +28,8 @@ CONF_OPERATOR = 'operator'
 CONF_PLAN = 'plan'
 CONF_SOURCE_SENSOR = 'source'
 CONF_DISABLE_METERS = 'disable_meters'
+
+ATTR_TARIFFS = 'tariffs'
 
 DOMAIN = 'electricity'
 
@@ -68,8 +70,6 @@ CONFIG_SCHEMA = vol.Schema({
             vol.Required(CONF_COUNTRY): cv.string,
             vol.Required(CONF_OPERATOR): cv.string,
             vol.Required(CONF_PLAN): cv.string,
-            vol.Required(CONF_SOURCE_SENSOR): cv.entity_id,
-            vol.Optional(CONF_DISABLE_METERS, default=False): cv.boolean,
         }) #, _cv_supported_operator)
     })
 }, extra=vol.ALLOW_EXTRA)
@@ -94,62 +94,61 @@ class EletricityEntity(Entity):
     def __init__(self, name, config):
         """Initialize an Electricity Contract."""
         self._name = name
-        self.config = config
         self.country = config[CONF_COUNTRY]
         self.operator = config[CONF_OPERATOR]
         self.plan = config[CONF_PLAN]
-        self.source_sensor = config[CONF_SOURCE_SENSOR]
-        if config[CONF_DISABLE_METERS]:
-            self.utility_meters = None
-        else:
-            self.utility_meters = []
+        self._tariffs = [] 
+        self._state = None
 
     async def async_added_to_hass(self):
         """Setup all required entities and automations."""
-        from electricity.tariffs import (Operators, WEEKLY, MONTHLY, YEARLY)
+        from electricity.tariffs import Operators
+
+        if self.country not in Operators:
+            self.hass.components.persistent_notification.create(
+                "<p><b>Error</b>: Country <em>{}</em> not supported.</p>"
+                "Check logs for list of supported options".format(self.country),
+                title="Electicity component",
+                notification_id="electricity_error_country")
+            _LOGGER.error("Country <%s> unsupported. Supported: %s",
+                          self.country, ",".join(Operators))
+            return
+        if self.operator not in Operators[self.country]:
+            self.hass.components.persistent_notification.create(
+                "<p><b>Error</b>: Operator <em>{}</em> not supported.</p>"
+                "Check logs for list of supported options".format(self.operator),
+                title="Electicity component",
+                notification_id="electricity_error_operator")
+            _LOGGER.error("Operator <%s> unsupported. Supported: %s",
+                          self.operator, ",".join(Operators[self.country]))
+            return
+        if self.plan not in Operators[self.country]\
+                                     [self.operator].tariff_periods():
+            self.hass.components.persistent_notification.create(
+                "<p><b>Error</b>: Plan <em>{}</em> not supported.</p>"
+                "Check logs for list of supported options".format(self.plan),
+                title="Electicity component",
+                notification_id="electricity_error_plan")
+            _LOGGER.error("Plan <%s> unsupported. Supported: %s", self.plan, 
+                          ",".join(Operators[self.country][self.operator].tariff_periods()))
+            return
+
 
         self.my_plan = Operators[self.country][self.operator](plan=self.plan)
-        if self.my_plan.billing_period() == WEEKLY:
-            meter_type = "weekly"
-        elif self.my_plan.billing_period() == MONTHLY:
-            meter_type = "monthly"
-        elif self.my_plan.billing_period() == YEARLY:
-            meter_type = "yearly"
+        
         self._state = self.my_plan.current_tariff(dt_util.now())
+        self._tariffs = self.my_plan.tariffs()
 
-        if self.utility_meters is not None:
-            for tariff in self.my_plan.tariffs():
-                _LOGGER.debug("Create utility_meter %s", tariff)
-                config = {
-                          'name': UTILITY_METER_NAME_FORMAT.format(self.name, tariff),
-                          'source': self.source_sensor,
-                          'meter_type': meter_type,
-                          'paused': self._state != tariff,
-                         }
-                _LOGGER.debug(config)
-                self.hass.async_create_task(discovery.async_load_platform(self.hass, "sensor", "utility_meter", config, self.config))
-                
-        async_track_utc_time_change(self.hass, self.timer_update, second=range(0,60,15))
+        async_track_utc_time_change(self.hass, self.timer_update, minute=range(0,60,15))
 
     @callback
     def timer_update(self, now):
         new_state = self.my_plan.current_tariff(now)
      
-        if self.utility_meters is not None and (
-                self.utility_meters == [] or 
-                len(self.utility_meters) != len(self.my_plan.tariffs())
-                ):
-            states = self.hass.states.async_all()
-            self.utility_meters = [s.entity_id for s in states for t in self.my_plan.tariffs() if s.name == UTILITY_METER_NAME_FORMAT.format(self.name, t)]
-
         if new_state != self._state:
             _LOGGER.debug("Changing from %s to %s", self._state, new_state)
             self._state = new_state
             self.schedule_update_ha_state()
-
-            if self.utility_meters is not None:
-                service_data = {ATTR_ENTITY_ID: self.utility_meters}
-                self.hass.async_create_task(self.hass.services.async_call("sensor", "utility_meter_start_pause", service_data))
 
     @property
     def should_poll(self):
@@ -170,3 +169,11 @@ class EletricityEntity(Entity):
     def icon(self):
         """Return the icon to use in the frontend, if any."""
         return ICON
+
+    @property
+    def device_state_attributes(self):
+        """Return the state attributes."""
+        if self._tariffs:
+            return {
+                ATTR_TARIFFS: self._tariffs,
+            }
