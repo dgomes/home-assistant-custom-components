@@ -21,6 +21,6 @@ automation:
     action:
       - service: utility_meter.select_tariff
         entity_id: utility_meter.energy
-		data_template:
+        data_template:
           tariff: "{{ trigger.to_state.state }}" 
 ```
