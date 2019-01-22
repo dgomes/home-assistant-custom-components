@@ -44,12 +44,6 @@ sensor:
   - platform: serial
     serial_port:  /dev/tty.USB0
     baudrate: 115200
-    
-binary_sensor:
-  - platform: mqtt
-    state_topic: "devices/heating/status"
-    name: heating
-    device_class: heat
 
 climate:
   - platform: homegw_climate
