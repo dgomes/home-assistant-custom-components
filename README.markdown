@@ -5,7 +5,8 @@ Some of my custom components for home-assistant (HA). (http://www.home-assistant
 * [HomeGW Climate](#homegw-climate) - Use an RF433Mhz weather logger as a climate sensor
 * [HomeGW Weather](#homegw-weather) - Use an RF433Mhz weather station
 * [Bluetooth Speaker](#bluetooth-speaker) - Play TTS through your bluetooth speaker connected to HA.
-* [Home Cover](#home-cover) - Control your covers with just two relay's
+* [HomeGW Cover](#homegw-cover) - Control your covers with just two relay's
+* [DALI Light](#dali-light) - Control your DALI lights
 
 ## Developer
 
@@ -94,9 +95,9 @@ media_player:
   cache_dir: /tmp/tts #OPTIONAL: only matters if you're not using the default
 ```
 
-## Home Cover
+## HomeGW Cover
 
-This is a **cover** platform on top of 2 relays exposed through MQTT. Each relays is closed for the duration in milliseconds publish to the control topic. **delay_time** indicates the time needed to go from 0% to 100% cover. For more information on this backend see [home_mqtt](https://github.com/dgomes/home_mqtt)
+This is a **cover** platform on top of 2 relays exposed through MQTT. Each relays is closed for the duration in milliseconds publish to the control topic. **delay_time** indicates the time needed to go from 0% to 100% cover. Albeit the name, it is not related to the hardware supporting weather and climate components, for more information on this backend see [home_mqtt](https://github.com/dgomes/home_mqtt).
 
 ### Example configuration
 
@@ -111,4 +112,15 @@ This is a **cover** platform on top of 2 relays exposed through MQTT. Each relay
       relay_up: 3
       relay_down: 4
       delay_time: 17000
+```
+
+## DALI Light
+
+This is a **light** platform that will setup your DALI lights. The platform relies on [python-dali](https://github.com/sde1000/python-dali) and has only been tested with the [hasseb DALI master](http://hasseb.fi/shop2/index.php?route=product/product&product_id=50) (therefore no configuration available for other controllers). The platform will discover all your DALI lights and create entities for each ballast. For a faster discovery, declare `max_gears` with the total number of DALI lights in your setup.
+
+### Example configuration
+```yaml
+- platform: dali
+  name: Living Room
+  max_gears: 4
 ```
