@@ -1,13 +1,13 @@
 # Home-Assistant Custom Components
 Some of my custom components for home-assistant (HA). (http://www.home-assistant.io)
 
+* [Bluetooth Speaker](bluetooth-speaker/) - Play TTS through your bluetooth speaker connected to HA.
+* [DALI Light](dali/) - Control your DALI lights
 * [Developer](#developer) - Get notifications of HA Pull-Requests
+* [Electricity](electricity/) - Current tariff of a given electricity operator
 * [HomeGW Climate](#homegw-climate) - Use an RF433Mhz weather logger as a climate sensor
 * [HomeGW Weather](#homegw-weather) - Use an RF433Mhz weather station
-* [Bluetooth Speaker](#bluetooth-speaker) - Play TTS through your bluetooth speaker connected to HA.
 * [HomeGW Cover](#homegw-cover) - Control your covers with just two relay's
-* [DALI Light](dali/) - Control your DALI lights
-* [Electricity](electricity/) - Current tariff of a given electricity operator
 
 ## Developer
 
