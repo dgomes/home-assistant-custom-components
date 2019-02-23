@@ -7,6 +7,7 @@ Some of my custom components for home-assistant (HA). (http://www.home-assistant
 * [Bluetooth Speaker](#bluetooth-speaker) - Play TTS through your bluetooth speaker connected to HA.
 * [HomeGW Cover](#homegw-cover) - Control your covers with just two relay's
 * [DALI Light](#dali-light) - Control your DALI lights
+* [Electricity](tree/master/electricity) - Current tariff of a given electricity operator
 
 ## Developer
 
@@ -112,15 +113,4 @@ This is a **cover** platform on top of 2 relays exposed through MQTT. Each relay
       relay_up: 3
       relay_down: 4
       delay_time: 17000
-```
-
-## DALI Light
-
-This is a **light** platform that will setup your DALI lights. The platform relies on [python-dali](https://github.com/sde1000/python-dali) and has only been tested with the [hasseb DALI master](http://hasseb.fi/shop2/index.php?route=product/product&product_id=50) (therefore no configuration available for other controllers). The platform will discover all your DALI lights and create entities for each ballast. For a faster discovery, declare `max_gears` with the total number of DALI lights in your setup.
-
-### Example configuration
-```yaml
-- platform: dali
-  name: Living Room
-  max_gears: 4
 ```
