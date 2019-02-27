@@ -149,6 +149,8 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
             _LOGGER.debug("Open")
             self._operate_cover(self._relay_up, abs(diff) * self._delay_time / 100)
             self._is_opening = True
+        self._position = position
+        self.async_schedule_update_ha_state(True)
 
     @property
     def should_poll(self):
