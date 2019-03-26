@@ -1,7 +1,7 @@
 # Home-Assistant Custom Components
 Some of my custom components for home-assistant (HA). (http://www.home-assistant.io)
 
-* [Bluetooth Speaker](bluetooth-speaker/) - Play TTS through your bluetooth speaker connected to HA.
+* [Bluetooth Speaker](bluetooth_speaker/) - Play TTS through your bluetooth speaker connected to HA.
 * [DALI Light](dali/) - Control your DALI lights
 * [Developer](#developer) - Get notifications of HA Pull-Requests
 * [Electricity](electricity/) - Current tariff of a given electricity operator
