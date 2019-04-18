@@ -16,7 +16,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.entity_component import EntityComponent
 from homeassistant.helpers.event import (
-    async_track_point_in_utc_time, async_track_utc_time_change)
+    async_track_point_in_time, async_track_time_change)
 from homeassistant.util import dt as dt_util
 
 REQUIREMENTS = ['python-electricity==0.0.4']
@@ -139,7 +139,7 @@ class EletricityEntity(Entity):
         self._state = self.my_plan.current_tariff(dt_util.now())
         self._tariffs = self.my_plan.tariffs()
 
-        async_track_utc_time_change(self.hass, self.timer_update, minute=range(0,60,15))
+        async_track_time_change(self.hass, self.timer_update, minute=range(0,60,15))
 
     @callback
     def timer_update(self, now):
