@@ -1,0 +1,13 @@
+{
+  "domain": "homegw",
+  "name": "HomeGW",
+  "config_flow": false,
+  "documentation": "https://github.com/dgomes/home-assistant-custom-components",
+  "requirements": [],
+  "dependencies": [
+    "mqtt"
+  ],
+  "codeowners": [
+    "@dgomes"
+  ]
+}

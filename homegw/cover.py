@@ -87,7 +87,7 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
             self._position = state.attributes.get('current_position', 50)
             
         @callback
-        def update_status(topic, payload, qos):
+        def update_status(mqttmsg):
             if self._timer is not None:
                 elapsed_time = dt_util.utcnow() - self._timer
                 elapsed_miliseconds = int(elapsed_time.seconds * 1000 + elapsed_time.microseconds / 1000)
@@ -96,16 +96,16 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
             else:
                 elapsed_miliseconds = 0
             
-            if topic == M_DUINO_RELAY.format(self._relay_up):
-                if payload == "true":
+            if mqttmsg.topic == M_DUINO_RELAY.format(self._relay_up):
+                if mqttmsg.payload == "true":
                     _LOGGER.debug("Opening %s", self._name)
                     self._is_opening = True
                     self._timer = dt_util.utcnow()
                 else:
                     self._is_opening = False
                     self._position+= int( (elapsed_miliseconds/self._delay_time) * 100 )
-            elif topic == M_DUINO_RELAY.format(self._relay_down):
-                if payload == "true":
+            elif mqttmsg.topic == M_DUINO_RELAY.format(self._relay_down):
+                if mqttmsg.payload == "true":
                     _LOGGER.debug("Closing %s", self._name)
                     self._is_closing = True
                     self._timer = dt_util.utcnow()

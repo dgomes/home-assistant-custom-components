@@ -2,7 +2,7 @@
 import logging
 import inspect
 
-from homeassistant.components.sensor.filter import (
+from homeassistant.components.filter.sensor import (
     OutlierFilter, LowPassFilter, ThrottleFilter,
     TimeSMAFilter, FilterState)
 import homeassistant.util.dt as dt_util 
