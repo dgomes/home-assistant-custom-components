@@ -11,7 +11,7 @@ import voluptuous as vol
 from homeassistant.components.weather import (
     WeatherEntity)
 from homeassistant.const import (
-    TEMP_CELSIUS, CONF_NAME, STATE_UNKNOWN)
+    TEMP_CELSIUS, CONF_NAME, STATE_UNKNOWN, STATE_UNAVAILABLE)
 from homeassistant.core import callback
 from homeassistant.components.weather import (
     PLATFORM_SCHEMA)
@@ -91,7 +91,7 @@ class HomeGWWeather(WeatherEntity, RestoreEntity):
         """Handle sensor state changes."""
         if new_state is None:
             return
-        elif new_state.state == STATE_UNKNOWN:
+        elif new_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]:
             return
 
         try:
