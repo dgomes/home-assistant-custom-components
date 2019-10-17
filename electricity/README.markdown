@@ -24,3 +24,7 @@ automation:
         data_template:
           tariff: "{{ trigger.to_state.state }}" 
 ```
+
+## Supported Plans
+
+Go to https://github.com/dgomes/python-electricity/blob/master/README.md
