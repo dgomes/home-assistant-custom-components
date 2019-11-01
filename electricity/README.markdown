@@ -17,10 +17,14 @@ automation:
   - alias: tariff change
     trigger:
       - platform: state
-        entity_id: electricity.operator_plan
+        entity_id: electricity.<operator_plan>
     action:
       - service: utility_meter.select_tariff
-        entity_id: utility_meter.energy
+        entity_id: utility_meter.<energy>
         data_template:
           tariff: "{{ trigger.to_state.state }}" 
 ```
+
+## Supported Plans
+
+Go to https://github.com/dgomes/python-electricity/blob/master/README.md
