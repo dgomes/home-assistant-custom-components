@@ -27,6 +27,9 @@ _LOGGER = logging.getLogger(__name__)
 CONF_RELAY_UP = "relay_up"
 CONF_RELAY_DOWN = "relay_down"
 
+ICON_OPEN = "mdi:blinds-open"
+ICON_CLOSE = "mdi:blinds"
+
 M_DUINO_RELAY = "devices/m-duino/relay/{}"
 M_DUINO_RELAY_SET = M_DUINO_RELAY + "/set"
 
@@ -73,7 +76,8 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
         self._relay_down = relay_down
         self._delay_time = delay_time
         self._is_closing = self._is_opening = False
-    
+        self._icon = ICON_OPEN
+
         self._closed = False
         self._position = 50
         self._timer = None
@@ -114,11 +118,13 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
                     self._position-= int( (elapsed_miliseconds/self._delay_time) * 100 )
            
             self._closed = False
+            self._icon = ICON_OPEN
             if self._position >= 99: #this accounts for timing errors
                 self._position = 100
             elif self._position <= 1:
                 self._position = 0
                 self._closed = True
+                self._icon = ICON_CLOSE
 
             self.async_schedule_update_ha_state(True)
 
@@ -129,6 +135,11 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
     def name(self):
         """Return the name of the cover."""
         return self._name
+
+    @property
+    def icon(self):
+        """Return the icon to use in the frontend, if any."""
+        return self._icon
 
     @property
     def current_cover_position(self):
