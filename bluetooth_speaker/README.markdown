@@ -1,3 +1,7 @@
+# DEPRECATED 
+This custom_component has not been updated according to the most recent HA component guidelines, will therefore not work in the current version.
+If you feel like fixing this component, let me know :) I will gladly accept PR's
+
 # Bluetooth Speaker
 
 This is a **media_player** platform that enables playback of _mp3_ and _wav_ files through a Bluetooth Speaker paired with a Linux Host using the [bluealsa](https://github.com/Arkq/bluez-alsa) stack.
