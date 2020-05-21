@@ -29,7 +29,7 @@ DOMAIN = 'developer'
 ENTITY_ID_FORMAT = DOMAIN + '.{}'
 
 HOMEASSITANT_ORGANIZATION = 'home-assistant'
-HOMEASSITANT_REPO = 'home-assistant'
+HOMEASSITANT_REPO = 'core'
 
 MAX_PR_NOTIFICATIONS = 5
 
