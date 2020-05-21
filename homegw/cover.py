@@ -11,7 +11,7 @@ import voluptuous as vol
 from homeassistant.util import dt as dt_util
 from homeassistant.core import callback
 from homeassistant.components.cover import (
-    CoverDevice, PLATFORM_SCHEMA,
+    CoverEntity, PLATFORM_SCHEMA,
     ATTR_POSITION)
 from homeassistant.const import (STATE_OPEN, STATE_CLOSED,
     CONF_COVERS, CONF_DELAY_TIME, CONF_FRIENDLY_NAME)
@@ -65,7 +65,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async_add_entities(covers)
 
 
-class HomeMQTTCover(CoverDevice, RestoreEntity):
+class HomeMQTTCover(CoverEntity, RestoreEntity):
     """Representation of a demo cover."""
 
     def __init__(self, hass, name, relay_up, relay_down, delay_time):
@@ -155,11 +155,9 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
         if diff > 0:
             _LOGGER.debug("Close")
             self._operate_cover(self._relay_down, diff * self._delay_time / 100)
-            self._is_closing = True
         elif diff < 0:
             _LOGGER.debug("Open")
             self._operate_cover(self._relay_up, abs(diff) * self._delay_time / 100)
-            self._is_opening = True
         self._position = position
         self.async_schedule_update_ha_state(True)
 
@@ -208,13 +206,11 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
         """Close the cover."""
         _LOGGER.debug("async_close_cover (%s)", self._relay_down)
         await self.async_set_cover_position(position=0)
-        self._is_closing = True 
 
     async def async_open_cover(self, **kwargs):
         """Open the cover."""
         _LOGGER.debug("async_open_cover (%s)", self._relay_up)
         await self.async_set_cover_position(position=100)
-        self._is_opening = True 
         
     async def async_stop_cover(self, **kwargs):
         """Stop the cover."""
@@ -224,7 +220,9 @@ class HomeMQTTCover(CoverDevice, RestoreEntity):
         elif self._is_closing:
             relays = [self._relay_down, self._relay_up]
         else:
-            self._position = 50 
+            self._position = 50
+            self._closed = False
+            self._timer = None
             self.async_schedule_update_ha_state(True)
         
         for r in relays:
