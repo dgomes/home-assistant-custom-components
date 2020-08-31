@@ -1,4 +1,6 @@
-# Electricity
+# Electricity (DEPRECATED)
+
+**This component has been superseeded by https://github.com/dgomes/ha_erse**
 
 This component provides the current tariff of a given electricity operator 
 
