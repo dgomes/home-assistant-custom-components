@@ -2,7 +2,7 @@
 Some of my custom components for home-assistant (HA). (http://www.home-assistant.io)
 
 * [Bluetooth Speaker](bluetooth_speaker/) - Play TTS through your bluetooth speaker connected to HA. (DEPRECATED)
-* [DALI Light](dali/) - Control your DALI lights (DEPRECATED)
+* [DALI Light](dali/) - Control your DALI lights (DEPRECATED but forked and maintained by @rousveiga https://github.com/rousveiga/home-assistant-custom-components/tree/master/dali)
 * [Developer](#developer) - Get notifications of HA Pull-Requests 
 * [Electricity](electricity/) - Current tariff of a given electricity operator (DEPRECATED)
 * [HomeGW Climate](#homegw-climate) - Use an RF433Mhz weather logger as a climate sensor
