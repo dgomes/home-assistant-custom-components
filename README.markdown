@@ -5,6 +5,7 @@ Some of my custom components for home-assistant (HA). (http://www.home-assistant
 * [DALI Light](dali/) - Control your DALI lights (DEPRECATED but forked and maintained by @rousveiga https://github.com/rousveiga/home-assistant-custom-components/tree/master/dali)
 * [Developer](#developer) - Get notifications of HA Pull-Requests 
 * [Electricity](electricity/) - Current tariff of a given electricity operator (DEPRECATED)
+* [Home Assistant ERSE](ha_erse/) - Track the current tariff and automates utility_meters (replaces [Electricity] and is available on [HACS](https://hacs.xyz))
 * [HomeGW Climate](#homegw-climate) - Use an RF433Mhz weather logger as a climate sensor
 * [HomeGW Weather](#homegw-weather) - Use an RF433Mhz weather station
 * [HomeGW Cover](#homegw-cover) - Control your covers with just two relay's

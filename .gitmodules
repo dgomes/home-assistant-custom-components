@@ -1,0 +1,3 @@
+[submodule "ha_erse"]
+	path = ha_erse
+	url = https://github.com/dgomes/ha_erse
