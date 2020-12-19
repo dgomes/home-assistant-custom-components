@@ -1,3 +1,6 @@
 [submodule "ha_erse"]
 	path = ha_erse
 	url = https://github.com/dgomes/ha_erse
+[submodule "rrd_recorder"]
+	path = rrd_recorder
+	url = https://github.com/dgomes/rrd_recorder

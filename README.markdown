@@ -9,6 +9,7 @@ Some of my custom components for home-assistant (HA). (http://www.home-assistant
 * [HomeGW Climate](#homegw-climate) - Use an RF433Mhz weather logger as a climate sensor
 * [HomeGW Weather](#homegw-weather) - Use an RF433Mhz weather station
 * [HomeGW Cover](#homegw-cover) - Control your covers with just two relay's
+* [RRD Recorder](rrd_recorder/) - Store historical data efficently using Round-Robin-Database (available on [HACS](https://hacs.xyz))
 
 ## Developer
 
